@@ -424,10 +424,11 @@
 
 <script>
 // ---------- Kanal und Version ----------
-// Eine Datei für beide Kanäle: „app“ (echte Daten, startet leer) und „test“ (Beispieldaten), erkannt am Pfad /test/ oder ?kanal=test
-const KANAL = (window.MFLOG_KANAL) || (location.pathname.includes('/test/') || /[?&]kanal=test\b/.test(location.search) ? 'test' : 'app');
+// Eine Datei für beide Kanäle: „app“ (echte Daten, startet leer) und „test“ (Beispieldaten), erkannt am Pfad /mf-test/ (veröffentlicht),
+// /test/ (lokal, app/test/) oder ?kanal=test
+const KANAL = (window.MFLOG_KANAL) || (/\/(mf-)?test\//.test(location.pathname) || /[?&]kanal=test\b/.test(location.search) ? 'test' : 'app');
 const TEST = KANAL==='test';
-const APP_VERSION='1.0.1';
+const APP_VERSION='1.0.2';
 const STORE_KEY = TEST?'mflog-test-v1':'mflog-v1';
 const APP_NAME = TEST?'MF-Log Test':'MF-Log';
 document.title = APP_NAME;

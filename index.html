@@ -9,17 +9,18 @@
 </head>
 <body>
 <p>MF-Log liegt jetzt unter <a href="./app/">…/mf-log/app/</a>.</p>
-<p>Testkanal: <a href="./test/">…/mf-log/test/</a></p>
+<p>Testkanal: <a href="/mf-test/">…/mf-test/</a></p>
 <script>
 // Bis 30.09.2026 lag die echte App direkt unter /mf-log/. Ihr Service Worker umfasste auch /mf-log/test/,
 // deshalb ließ sich der Testkanal nicht als eigene App installieren. Alte Registrierung entfernen, dann weiter zur App.
+// Der Testkanal liegt seit 1.0.2 in einem eigenen Repo unter /mf-test/.
 (async () => {
   try {
     if ('serviceWorker' in navigator) {
       const regs = await navigator.serviceWorker.getRegistrations();
       await Promise.all(regs.filter(r => new URL(r.scope).pathname === location.pathname.replace(/[^/]*$/, '')).map(r => r.unregister()));
     }
-    if ('caches' in window) await caches.delete('mflog-app-1.0.0');
+    if ('caches' in window) await Promise.all(['mflog-app-1.0.0', 'mflog-test-1.0.0', 'mflog-test-1.0.1'].map(k => caches.delete(k)));
   } catch (e) {}
   location.replace('./app/' + location.search + location.hash);
 })();
