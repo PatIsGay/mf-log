@@ -246,6 +246,27 @@
     table.matrix.month{width:100%}
     .land-hint{display:inline}
   }
+  /* Kalender im Querformat auf dem Handy (html.kalq nur im Reiter Kalender): Reiterleiste als schmale Leiste links, Kopf und Banner
+     ausgeblendet, Matrix füllt Breite und Höhe; Zeilenhöhe --kalrh und Schrift --kalfs setzt kalFit() auf table.kalm */
+  @media (orientation:landscape) and (max-height:560px){
+    html.kalq .proto,html.kalq .top{display:none}
+    html.kalq .app{max-width:none;border:0}
+    html.kalq nav.tabs{top:0;right:auto;width:calc(64px + env(safe-area-inset-left,0px));justify-content:flex-start}
+    html.kalq nav.tabs .bar{max-width:none;width:100%;height:100%;grid-template-columns:1fr;grid-auto-rows:min-content;align-content:center;gap:6px;border-top:0;border-right:1px solid var(--line);padding:6px 6px 6px calc(6px + env(safe-area-inset-left,0px))}
+    html.kalq nav.tabs button{font-size:10px;padding:6px 0}
+    html.kalq main{padding:8px 12px 24px calc(76px + env(safe-area-inset-left,0px));gap:10px}
+    html.kalq table.kalm{width:100%}
+    html.kalq table.kalm th,html.kalq table.kalm td{height:var(--kalrh,auto);padding-top:1px;padding-bottom:1px}
+    html.kalq table.kalm:not(.month){font-size:var(--kalfs,12px)}
+    html.kalq table.kalm:not(.month) th{font-size:calc(var(--kalfs,12px) - 1px)}
+    html.kalq table.kalm:not(.month){table-layout:fixed}
+    html.kalq table.kalm:not(.month) th:first-child,html.kalq table.kalm:not(.month) td:first-child{font-size:calc(var(--kalfs,12px) - 1px);width:130px;min-width:130px;max-width:130px}
+    html.kalq table.kalm:not(.month) th br{display:none}
+    html.kalq table.kalm:not(.month) th .pvl{display:inline;margin-left:5px;font-size:inherit}
+    html.kalq table.kalm:not(.month) td.day{min-width:0}
+    html.kalq table.kalm:not(.month) .sw{width:1.2em;height:1.4em;line-height:1.4em}
+    html.kalq table.kalm:not(.month) .dot{width:.8em;height:.8em}
+  }
   table.month .dot{width:6px;height:6px}
   table.month th:first-child,table.month td:first-child{min-width:74px;max-width:74px;font-size:11px;padding-left:6px}
   table.month .sub{padding-left:6px}
@@ -274,6 +295,20 @@
   /* Übungskarte: „gemacht am“ (Datums-Chips) und datierte Notizen je Übung */
   .exdone,.nrow{display:flex;flex-direction:column;gap:4px}
   .exdone .ftl,.nrow .ftl{font-size:11px;line-height:1.25;color:var(--ink2)}
+  /* Übungskarte in der Bibliothek: klar getrennte Abschnitte mit Überschrift; „Soll verbessern“ hervorgehoben und oben */
+  .exsec{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:10px}
+  .exsec>.ftl,.exsec-h{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);line-height:1.25}
+  .exsec-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .exsec-h .tog{text-transform:none;letter-spacing:0;font-size:13px}
+  .exsec.ziel{border-top:0;background:var(--accent-soft);border-left:3px solid var(--accent);border-radius:10px;padding:10px 12px}
+  .exsec.ziel .exsec-h>span{color:var(--accent)}
+  .zrow{font-size:14px;line-height:1.35;color:var(--ink)}
+  .zrow .zw{font-size:12px;color:var(--ink2)}
+  .zleer{font-size:13px;color:var(--ink2)}
+  /* zugeklappte Karte: Ziel-Kästchen unter dem Namen */
+  .zchips{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-top:5px}
+  .zchips .zl{font-size:11px;color:var(--ink2);margin-right:2px}
+  .zchip{font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--accent-soft);color:var(--accent);white-space:nowrap}
   .nrow .rts{display:flex;flex-direction:column;min-width:0}
   .nrow .nl{display:block;width:100%;text-align:left;font-size:12px;color:var(--ink);padding:4px 0;border-top:1px solid var(--line2)}
   .nrow .nl:first-child{border-top:0}
@@ -334,6 +369,27 @@
   .bilanz div{background:var(--surface2);border-radius:8px;padding:6px 2px}
   .bilanz b{display:block;font-family:"IBM Plex Mono",monospace;font-size:15px}
   .bilanz small{font-size:11px;color:var(--ink2)}
+  /* Durchführung: Kacheln „gemacht“ und „Probleme“ sind Schalter für die Tagesliste darunter (standardmäßig zu) */
+  button.bil{display:block;width:100%;background:var(--surface2);border-radius:8px;padding:6px 2px;text-align:center;border:2px solid transparent}
+  button.bil small::after{content:' ▸'}
+  button.bil[aria-pressed="true"]{border-color:var(--accent)}
+  button.bil[aria-pressed="true"] small::after{content:' ▾'}
+  button.bil:disabled{opacity:.6;cursor:default}
+  button.bil:disabled small::after{content:''}
+  /* Video: Vorschaubild 16:9 mit Abspielknopf (YouTube, Vimeo), Tipp spielt eingebettet ab; andere Links als Zeile */
+  .vbox{display:flex;flex-direction:column;gap:6px}
+  .vthumb{position:relative;display:block;width:100%;aspect-ratio:16/9;border-radius:10px;background:#1b1f1c center/cover no-repeat;overflow:hidden}
+  .vplay{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;background:rgba(0,0,0,.62)}
+  .vplay::after{content:'';position:absolute;left:23px;top:17px;border-left:18px solid #fff;border-top:12px solid transparent;border-bottom:12px solid transparent}
+  .vart{position:absolute;left:8px;bottom:8px;font-size:11px;font-weight:700;color:#fff;background:rgba(0,0,0,.6);padding:2px 7px;border-radius:5px}
+  .vframe{position:relative;width:100%;aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:#000}
+  .vframe iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+  .vfoot{display:flex;justify-content:space-between;gap:10px}
+  .vfoot .tog{font-size:13px}
+  .vlink{flex-direction:row;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:10px;padding:8px 12px}
+  .vlink .vhost{font-size:12px;color:var(--ink2);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ex .vbox.tr{margin-bottom:2px}
+  #vidhold{position:fixed;left:-10000px;top:0;width:320px;height:180px;overflow:hidden}
   .daynav{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:nowrap}
   .daynav h3{flex:1;min-width:0;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .daynav .chip{flex:0 0 auto;white-space:nowrap}
@@ -438,7 +494,7 @@
 // /test/ (lokal, app/test/) oder ?kanal=test
 const KANAL = (window.MFLOG_KANAL) || (/\/(mf-)?test\//.test(location.pathname) || /[?&]kanal=test\b/.test(location.search) ? 'test' : 'app');
 const TEST = KANAL==='test';
-const APP_VERSION='1.0.5';
+const APP_VERSION='1.0.9';
 const STORE_KEY = TEST?'mflog-test-v1':'mflog-v1';
 const APP_NAME = TEST?'MF-Log Test':'MF-Log';
 document.title = APP_NAME;
@@ -484,8 +540,8 @@ const vidPh=id=>'https://example.com/video/'+id;
 function exSeed(){
   if(!TEST)return [];
   const arr=[
-  {id:'e1',name:'Liegender Läufer',cat:'K',region:'Becken / Hüfte',side:'getrennt',dose:'2 × 8 Atemzüge je Seite',tags:['Atmung','Knie-Vorschub'],status:'aktiv',cues:['Langsam ausatmen, Druck gleichmäßig halten','Fuß stabil, Gewicht mittig','Erst Spannung aufbauen, dann bewegen'],video:vidPh('e1')},
-  {id:'e2',name:'Wandstehen',cat:'K',region:'Becken',side:'beidseitig',dose:'3 × 60 s',tags:['Becken-Aufrichtung','Fußposition'],status:'aktiv',cues:['Rücken lang, Kopf neutral','Gewicht auf beide Füße verteilen'],video:vidPh('e2')},
+  {id:'e1',name:'Liegender Läufer',cat:'K',region:'Becken / Hüfte',side:'getrennt',dose:'2 × 8 Atemzüge je Seite',tags:['Atmung','Knie-Vorschub'],status:'aktiv',cues:['Langsam ausatmen, Druck gleichmäßig halten','Fuß stabil, Gewicht mittig','Erst Spannung aufbauen, dann bewegen'],video:'https://youtu.be/aqz-KE-bpKQ'},
+  {id:'e2',name:'Wandstehen',cat:'K',region:'Becken',side:'beidseitig',dose:'3 × 60 s',tags:['Becken-Aufrichtung','Fußposition'],status:'aktiv',cues:['Rücken lang, Kopf neutral','Gewicht auf beide Füße verteilen'],video:'https://vimeo.com/1084537'},
   {id:'e3',name:'90-90 Hiplift',cat:'K',region:'Becken',side:'beidseitig',dose:'3 × 5 Atemzüge',tags:['Atmung','Knie-Vorschub'],status:'aktiv',cues:['Ruhig atmen, Schultern locker']},
   {id:'e4',name:'Kniestand',cat:'K',region:'Hüfte',side:'getrennt',dose:'2 × 45 s je Seite',tags:['Becken-Aufrichtung'],status:'testphase',cues:[],video:vidPh('e4'),first:'12.09.'},
   {id:'e5',name:'Goblet Squat mit Fersenkeil',cat:'I',region:'Ganzkörper',side:'beidseitig',dose:'3 × 8',tags:['Fußposition','Knie-Vorschub'],status:'aktiv',cues:['Knie in Richtung Fußspitze, Rücken gerade'],video:vidPh('e5')},
@@ -721,13 +777,16 @@ document.getElementById('mehr').addEventListener('click',()=>mehrSheet());
 function setTabH(){const b=document.querySelector('nav.tabs .bar');if(b)document.documentElement.style.setProperty('--tabh',b.offsetHeight+'px')}
 window.addEventListener('resize',setTabH);
 function render(){
+  document.documentElement.classList.toggle('kalq',S.tab==='kal');
   setTabH(); main.classList.toggle('withbar',S.tab==='training'&&!!S.session&&!!S.sessShow);
   // laufende Einheit nach jeder Änderung als offenen Eintrag speichern
   if(S.session)syncSession();
   const T={heute:'Heute',training:'Training',bib:'Bibliothek',kal:'Kalender'}[S.tab];
   document.getElementById('title').textContent=T;
   document.getElementById('subtitle').textContent=`${wd(today)}, ${fmt(today)}${today.getFullYear()}`;
+  vidCheck(); const vk=vidKeep();
   ({heute:rHeute,training:rTraining,bib:rBib,kal:rKal})[S.tab]();
+  vidPlace(vk); vidThumbs();
   save();
 }
 
@@ -988,9 +1047,9 @@ function rTraining(){
     return `<div class="ex ${it.r?'done':''} ${it.skip?'skipped':''} ${it.open?'open':''}" data-i="${idx}"><span class="swhint l">überspringen</span><span class="swhint r">doch machen</span>
       <div class="head"><div class="name"><button class="nm" data-tog="${idx}"><b>${esc(e.name)}${it.extra?' <span class="badge">außerplanmäßig</span>':''}${exStatus(e)==='testphase'?' <span class="badge test">Testphase</span>':''}</b></button><small><button class="chip sm dose ${it.d&&!sameDose(it.d,e.d)?'dev':''}" data-dose="${idx}">${doseStr(it.d||e.d)}${it.d&&!sameDose(it.d,e.d)?' · geändert':''} ✎</button>${e.side==='getrennt'?`<span class="sidet"> · ${it.side==='L'?'nur links':it.side==='R'?'nur rechts':'beide Seiten'}</span>`:''}${cnt}${!it.open&&it.rt&&it.rt.nach?'<span style="color:var(--ink2)"> · Retest</span>':''}${it.skip?' · übersprungen':''}</small></div>
         <div class="rate"><button data-r="1" class="${it.r?'on':''}" title="gemacht" aria-pressed="${!!it.r}">✓</button><button data-pain class="pain ${it.pain?'on':''}" title="Problem oder Schmerz" aria-pressed="${!!it.pain}">!</button></div></div>
-      <div class="body">${box}
+      <div class="body">${it.open?videoBox(e,'tr'):''}${box}
         ${!it.rt?'':`<div class="rtline"><span>${esc(testShort(it.rt.test))} · ${rtText(it.rt)}</span>${it.rt.nach?`<button class="chip sm" data-rtdel="${idx}">ändern</button>`:`<button class="chip sm" data-rtnach="${idx}">danach messen</button>`}</div>`}
-        <div class="exacts">${e.video?`<button data-video="${idx}">▶ Video</button>`:''}${it.rt?'':`<button data-rt="${idx}">Test davor</button>`}${timerOn(it)?`<button class="tmr" data-timerstop="${idx}" aria-label="Timer stoppen">⏱ ${fmtSec(timerLeft())}</button>`:`<button data-timer="${idx}">Timer</button>`}<button data-notetog="${idx}" aria-pressed="${!!(it.noteOpen||it.note||it.pain)}">Notiz</button><button data-more="${idx}" aria-label="Mehr: + Cue, überspringen">⋯</button></div>
+        <div class="exacts">${it.rt?'':`<button data-rt="${idx}">Test davor</button>`}${timerOn(it)?`<button class="tmr" data-timerstop="${idx}" aria-label="Timer stoppen">⏱ ${fmtSec(timerLeft())}</button>`:`<button data-timer="${idx}">Timer</button>`}<button data-notetog="${idx}" aria-pressed="${!!(it.noteOpen||it.note||it.pain)}">Notiz</button><button data-more="${idx}" aria-label="Mehr: + Cue, überspringen">⋯</button></div>
         ${it.noteOpen||it.note||it.pain?`<input type="text" placeholder="${it.pain?'Was war? z. B. Ziehen rechts, Fuß gerutscht':'Kurznotiz, z. B. nur rechts super'}" value="${esc(it.note||'')}" data-note="${idx}">`:''}
       </div></div>`}).join('');
   const done=s.items.filter(i=>i.r).length, total=s.items.filter(i=>!i.skip).length, todo=s.items.filter(exTodo).length;
@@ -1026,7 +1085,6 @@ function rTraining(){
     if(b.dataset.rtdel!=null){delete it.rt;render();return}
     if(b.dataset.notetog!=null){if(it.note||it.pain){const inp=row.querySelector('[data-note]');if(inp)inp.focus();return}it.noteOpen=!it.noteOpen;render();if(it.noteOpen){const inp=document.querySelector(`#exlist [data-note="${idx}"]`);if(inp)inp.focus()}return}
     if(b.dataset.more!=null){moreSheet(idx);return}
-    if(b.dataset.video!=null){openVideo(e.video);return}
     if(b.dataset.timer!=null){startTimer(it,e);render();return}
     if(b.dataset.timerstop!=null){stopTimer();render();toast('Timer gestoppt');return}
     if(b.dataset.ec){const [i,ci]=b.dataset.ec.split(':').map(Number);cueEditSheet(e.cues[ci],v=>{const arr=[...e.cues];if(v==null)arr.splice(ci,1);else arr[ci]=v;setCues(e,arr);render()});return}
@@ -1106,6 +1164,56 @@ function beep(ac){try{if(!ac)return;const t0=ac.currentTime;[0,0.3].forEach(dt=>
 function stopTimer(){if(!TIMER)return;clearInterval(TIMER.iv);try{if(TIMER.ac)TIMER.ac.close()}catch(x){}TIMER=null}
 // Video-Link der Übung in neuem Tab bzw. in der zuständigen App öffnen
 function openVideo(url){if(!url)return;try{window.open(url,'_blank','noopener')}catch(x){toast('Video-Link lässt sich nicht öffnen')}}
+// ---------- Video eingebettet (YouTube, Vimeo) ----------
+// Startzeit aus t= bzw. start= (90, 90s, 1m30s, 1h2m3s) in Sekunden
+const vidStart=v=>{if(!v)return 0;if(/^\d+$/.test(v))return +v;const m=String(v).match(/^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/);return m?((+m[1]||0)*3600+(+m[2]||0)*60+(+m[3]||0)):0};
+// Link erkennen; null, wenn weder YouTube noch Vimeo (dann Zeile „Video öffnen“)
+function videoInfo(url){
+  try{const u=new URL(url),h=u.hostname.replace(/^(www|m)\./,'');
+    if(['youtu.be','youtube.com','youtube-nocookie.com','music.youtube.com'].includes(h)){
+      let id=null;if(h==='youtu.be')id=u.pathname.slice(1).split('/')[0];else if(u.pathname==='/watch')id=u.searchParams.get('v');else{const m=u.pathname.match(/^\/(shorts|embed|live|v)\/([^/?#]+)/);if(m)id=m[2]}
+      if(id&&/^[\w-]{6,20}$/.test(id)){const t=vidStart(u.searchParams.get('t')||u.searchParams.get('start'));
+        return {art:'youtube',id,thumb:'https://i.ytimg.com/vi/'+id+'/hqdefault.jpg',embed:'https://www.youtube-nocookie.com/embed/'+id+'?autoplay=1&playsinline=1&rel=0'+(t?'&start='+t:'')}}}
+    if(h==='vimeo.com'||h==='player.vimeo.com'){const seg=u.pathname.split('/').filter(Boolean),i=seg.findIndex(x=>/^\d+$/.test(x));
+      if(i>=0){const id=seg[i],hash=(u.searchParams.get('h')||(seg[i+1]&&/^[0-9a-f]{6,}$/i.test(seg[i+1])?seg[i+1]:'')).replace(/[^0-9a-f]/gi,'');
+        return {art:'vimeo',id,hash,embed:'https://player.vimeo.com/video/'+id+'?autoplay=1&playsinline=1'+(hash?'&h='+hash:'')}}}
+  }catch(x){}
+  return null}
+// VIDPLAY = 'ort:übungs-id' des gerade abgespielten Videos (ort 'tr' Training, 'bib' Bibliothek); nur für diese Sitzung
+let VIDPLAY=null; const VIMTHUMB={};
+function videoBox(e,ort){
+  if(!e||!e.video)return '';
+  const v=videoInfo(e.video), key=ort+':'+e.id, cls='vbox'+(ort==='tr'?' tr':'');
+  if(!v){let host='';try{host=new URL(e.video).hostname.replace(/^www\./,'')}catch(x){}
+    return `<div class="${cls} vlink"><button class="btn ghost" style="padding:6px 12px;font-size:13px" data-vidopen="${e.id}">▶ Video öffnen</button><span class="vhost">${esc(host)}</span></div>`}
+  if(VIDPLAY===key)return `<div class="${cls}"><div class="vframe" data-vkey="${key}"></div><div class="vfoot"><button class="tog" data-vidclose="1">schließen</button><button class="tog" data-vidopen="${e.id}">extern öffnen ↗</button></div></div>`;
+  const th=v.art==='youtube'?v.thumb:(VIMTHUMB[v.id]||'');
+  return `<div class="${cls}"><button class="vthumb" data-vidplay="${key}"${v.art==='vimeo'?` data-vimeo="${v.id}"`:''} aria-label="Video abspielen: ${esc(e.name)}"${th?` style="background-image:url('${th}')"`:''}><span class="vplay"></span><span class="vart">${v.art==='youtube'?'YouTube':'Vimeo'}</span></button></div>`}
+// Abspielzustand nur behalten, solange die Übung sichtbar aufgeklappt ist
+function vidCheck(){if(!VIDPLAY)return;const [o,id]=VIDPLAY.split(':');
+  const ok=o==='bib'?(S.tab==='bib'&&S.openEx===id):(S.tab==='training'&&!!S.session&&!!S.sessShow&&S.session.items.some(i=>i.id===id&&i.open));
+  if(!ok)VIDPLAY=null}
+// Laufendes Video beim Neuzeichnen nicht neu starten: iframe vorher in einen Halter verschieben und danach zurück.
+// moveBefore erhält den Zustand (Chrome ab 133); ohne moveBefore lädt das Video neu.
+function vidMove(node,parent){try{if(parent.moveBefore){parent.moveBefore(node,null);return}}catch(x){}parent.appendChild(node)}
+function vidKeep(){const f=document.querySelector('.vframe iframe');if(!f)return null;let h=document.getElementById('vidhold');if(!h){h=document.createElement('div');h.id='vidhold';h.setAttribute('aria-hidden','true');document.body.appendChild(h)}vidMove(f,h);return f}
+function vidPlace(f){
+  const ph=VIDPLAY?document.querySelector('.vframe[data-vkey="'+VIDPLAY+'"]'):null;
+  if(!ph){if(f)f.remove();return}
+  if(f&&f.dataset.vkey===VIDPLAY){vidMove(f,ph);return}
+  if(f)f.remove();
+  const e=exById(VIDPLAY.split(':')[1]),v=e&&videoInfo(e.video);if(!v)return;
+  const i=document.createElement('iframe');i.src=v.embed;i.dataset.vkey=VIDPLAY;i.title='Video: '+e.name;
+  i.setAttribute('allow','autoplay; fullscreen; picture-in-picture; encrypted-media');i.setAttribute('allowfullscreen','');ph.appendChild(i)}
+// Vimeo-Vorschaubilder über oEmbed nachladen (einmal je Video); ohne Netz bleibt der dunkle Kasten mit Abspielknopf
+function vidThumbs(){document.querySelectorAll('.vthumb[data-vimeo]').forEach(b=>{const id=b.dataset.vimeo;if(VIMTHUMB[id]||VIMTHUMB['?'+id])return;VIMTHUMB['?'+id]=1;
+  const e=EX.find(x=>x.video&&(videoInfo(x.video)||{}).id===id);if(!e)return;
+  fetch('https://vimeo.com/api/oembed.json?width=640&url='+encodeURIComponent(e.video)).then(r=>r.ok?r.json():null).then(j=>{const t=j&&j.thumbnail_url;
+    if(typeof t==='string'&&/^https:\/\/i\.vimeocdn\.com\/[^"'()\s]+$/.test(t)){VIMTHUMB[id]=t;document.querySelectorAll('.vthumb[data-vimeo="'+id+'"]').forEach(x=>x.style.backgroundImage="url('"+t+"')")}}).catch(()=>{})})}
+document.addEventListener('click',ev=>{const t=ev.target.closest('[data-vidplay],[data-vidclose],[data-vidopen]');if(!t)return;
+  if(t.dataset.vidplay){VIDPLAY=t.dataset.vidplay;render();return}
+  if(t.dataset.vidclose){VIDPLAY=null;render();return}
+  if(t.dataset.vidopen){const e=exById(t.dataset.vidopen);openVideo(e&&e.video)}});
 // Link ohne Schema („youtu.be/…“) als https behandeln
 const normUrl=v=>{v=String(v||'').trim();if(!v)return '';return /^[a-z][a-z0-9+.-]*:/i.test(v)?v:'https://'+v};
 function startSession(blockId,dateIso){
@@ -1222,6 +1330,8 @@ function sortable(list,onMove){
   });
 }
 let NEX_MORE=false;
+// Durchführung auf der Übungskarte: welche Tagesliste offen ist (je Übung 'g' gemacht, 'p' Probleme), nur für diese Sitzung
+let BILMODE={};
 const tagChips=(sel,attr)=>`<div class="chips tagchips">${Object.keys(PRINZIP).map(t=>`<button class="chip sm ${sel.includes(t)?'on':''}" ${attr}="${esc(t)}" aria-pressed="${sel.includes(t)}">${esc(t)}</button>`).join('')}</div>`;
 function newExerciseSheet(cb){
   let cat='K',side='beidseitig',u='Wdh',nm='',region='',video='',tags=[],status='testphase';
@@ -1466,32 +1576,41 @@ function rBib(){
   const items=EX.filter(e=>f==='alle'||(f==='K'&&e.cat==='K')||(f==='I'&&e.cat==='I')||(f==='test'&&exStatus(e)==='testphase')||(f==='geparkt'&&['geparkt','verworfen'].includes(exStatus(e))));
   // Test-Retest: letzte 8 Paare, chronologisch; Tipp öffnet den Tag
   const rtRow=e=>{const ps=rtPairs(e.id).slice(-8);if(!ps.length)return '';
-    return `<div class="rtrow"><span class="ftl">Test-Retest</span><div class="rts">${ps.map(o=>`<button class="rtl" data-rtday="${o.k}">${dfmt(o.k)} · ${esc(testShort(o.rt.test))} · ${rtShort(o.rt)}</button>`).join('')}</div></div>`};
-  // „gemacht am“: letzte 8 Tage, an denen die Übung abgehakt und nicht übersprungen wurde, älteste links; nur Navigation, keine Werte
-  const doneRow=e=>{const ks=Object.keys(S.days).filter(k=>(S.days[k].done||[]).some(a=>(a.ex||[]).some(i=>i.id===e.id&&i.r&&!i.skip))).sort().slice(-8);if(!ks.length)return '';
-    return `<div class="exdone"><span class="ftl">gemacht am</span><div class="chips">${ks.map(k=>`<button class="chip sm" data-exday="${k}">${dfmt(k)}</button>`).join('')}</div></div>`};
+    return `<div class="rtrow exsec"><span class="ftl">Test-Retest</span><div class="rts">${ps.map(o=>`<button class="rtl" data-rtday="${o.k}">${dfmt(o.k)} · ${esc(testShort(o.rt.test))} · ${rtShort(o.rt)}</button>`).join('')}</div></div>`};
+  // Tage zur Kachel „gemacht“ (abgehakt, nicht übersprungen) bzw. „Probleme“ (mit „!“), älteste links; nur Navigation, keine Werte
+  const bilTage=(e,m)=>Object.keys(S.days).filter(k=>(S.days[k].done||[]).some(a=>(a.ex||[]).some(i=>i.id===e.id&&i.r&&!i.skip&&(m!=='p'||i.pain)))).sort();
+  const doneRow=(e,m)=>{const all=bilTage(e,m);if(!all.length)return '';const ks=all.slice(-20);
+    return `<div class="exdone"><span class="ftl">${m==='p'?'Probleme am':'gemacht am'}${all.length>ks.length?' · die letzten '+ks.length:''}</span><div class="chips">${ks.map(k=>`<button class="chip sm" data-exday="${k}">${dfmt(k)}</button>`).join('')}</div></div>`};
+  const bilKachel=(e,m,n,l)=>{const an=BILMODE[e.id]===m, leer=!bilTage(e,m).length;return `<button class="bil" data-bil="${e.id}:${m}" aria-pressed="${an&&!leer}"${leer?' disabled':''}><b>${n}</b><small>${l}</small></button>`};
   // datierte Notizen je Übung (S.exNotes) und Kurznotizen aus Einheiten, gemeinsam neueste oben; Tipp auf eine eigene Notiz öffnet Bearbeiten/Löschen, Kurznotizen nur Anzeige
   const notesRow=e=>{const ns=(S.exNotes||{})[e.id]||[];
     const un=[];Object.keys(S.days).forEach(k=>(S.days[k].done||[]).forEach(a=>(a.ex||[]).forEach(i=>{if(i.id===e.id&&i.note)un.push({d:k,t:i.note})})));
     const all=[...ns.map((n,i)=>({d:n.d,t:n.t,i})),...un].sort((a,b)=>b.d.localeCompare(a.d)||(a.i==null)-(b.i==null)||(b.i??0)-(a.i??0));
-    return (all.length?`<div class="nrow"><span class="ftl">Notizen</span><div class="rts">${all.map(o=>o.i!=null?`<button class="nl" data-exnote="${e.id}:${o.i}"><span class="nd">${dfmt(o.d)} ·</span> ${esc(o.t)}</button>`:`<div class="nl"><span class="nd">${dfmt(o.d)} ·</span> ${esc(o.t)} <span class="badge">Einheit</span></div>`).join('')}</div></div>`:'')
-      +`<div class="chips"><button class="chip sm" data-addnote="${e.id}">+ Notiz</button></div>`};
+    return `<div class="nrow exsec"><span class="ftl">Notizen</span>${all.length?`<div class="rts">${all.map(o=>o.i!=null?`<button class="nl" data-exnote="${e.id}:${o.i}"><span class="nd">${dfmt(o.d)} ·</span> ${esc(o.t)}</button>`:`<div class="nl"><span class="nd">${dfmt(o.d)} ·</span> ${esc(o.t)} <span class="badge">Einheit</span></div>`).join('')}</div>`:''}`
+      +`<div class="chips"><button class="chip sm" data-addnote="${e.id}">+ Notiz</button></div></div>`};
+  // „Soll verbessern“: Tests der Übung mit Ziel und letztem Wert, oben auf der Karte; „ändern“ öffnet die Auswahl wie im Plan
+  const zielSec=e=>{const ts=exTests(e.id);
+    return `<div class="exsec ziel"><div class="exsec-h"><span>Soll verbessern</span><button class="tog" data-exziel="${e.id}">${ts.length?'ändern':'wählen'}</button></div>`
+      +(ts.length?ts.map((t,i)=>{const z=zielOf(t);return `<div class="zrow"><b>${esc(goalName(t))}</b>${i===0&&ts.length>1?' <span class="badge">primär</span>':''}<div class="zw">${z?nw('Ziel '+goalVal(z.test,z.target))+' · ':''}${nw(goalLast(t))}</div></div>`}).join(''):'<div class="zleer">Noch nichts gewählt.</div>')+`</div>`};
+  // zugeklappt: Ziel-Kästchen unter dem Namen (aufgeklappt zeigt der Abschnitt die Einzelheiten, nichts doppelt)
+  const zielChips=e=>{const ts=exTests(e.id);return ts.length&&S.openEx!==e.id?`<span class="zchips"><span class="zl">soll verbessern</span>${ts.map(t=>`<span class="zchip">${esc(goalName(t))}</span>`).join('')}</span>`:''};
   // leere Bibliothek (echter Kanal beim Start): nur Hinweis und „+ Neue Übung“, ohne Suche und Filter
   const leer=!EX.length;
   main.innerHTML=nav+inb+(leer?'':`<input type="text" id="q" placeholder="Suchen, auch Spitznamen"><div class="chips">${[['alle','Alle'],['K','Korrektiv'],['I','Intensiv'],['test','Testphase'],['geparkt','Geparkt']].map(([k,l])=>`<button class="chip sm ${f===k?'on':''}" data-f="${k}">${l}</button>`).join('')}</div>`)+`
-  <section class="card"><div class="list" id="exl">${leer?'<div class="hint" id="exEmpty">Noch keine Übungen. Lege die erste mit „+ Neue Übung“ an.</div>':items.length?'':'<div class="hint">Keine Übung in diesem Filter.</div>'}${items.map(e=>{const st=exStatus(e);const b=bilanz(e);const pb=planBlocksOf(e.id);const ip=pb.length>0;return `<div class="ex ${S.openEx===e.id?'open':''}"><div class="head"><button class="name" data-open="${e.id}"><b>${esc(e.name)} <span class="act ${e.cat}">${e.cat}</span> ${ip?`<span class="badge">im Plan · ${esc(pb.map(x=>x.name).join(', '))}</span>`:''} ${st!=='aktiv'?`<span class="badge ${st==='testphase'?'test':st}">${st}</span>`:''}</b><small>${[esc(e.region||''),doseStr(e.d)].filter(Boolean).join(' · ')}${e.side==='getrennt'?' · L/R':''}</small></button></div>
-    <div class="body"><div class="bilanz"><div><b>${b.n}</b><small>gemacht</small></div><div><b>${b.p}</b><small>Probleme</small></div></div>
-    ${S.openEx===e.id?doneRow(e):''}
-    ${exTests(e.id).length?`<div class="goalline">${exTestsLine(e)}</div>`:''}
+  <section class="card"><div class="list" id="exl">${leer?'<div class="hint" id="exEmpty">Noch keine Übungen. Lege die erste mit „+ Neue Übung“ an.</div>':items.length?'':'<div class="hint">Keine Übung in diesem Filter.</div>'}${items.map(e=>{const st=exStatus(e);const b=bilanz(e);const pb=planBlocksOf(e.id);const ip=pb.length>0;return `<div class="ex ${S.openEx===e.id?'open':''}"><div class="head"><button class="name" data-open="${e.id}"><b>${esc(e.name)} <span class="act ${e.cat}">${e.cat}</span> ${ip?`<span class="badge">im Plan · ${esc(pb.map(x=>x.name).join(', '))}</span>`:''} ${st!=='aktiv'?`<span class="badge ${st==='testphase'?'test':st}">${st}</span>`:''}</b><small>${[esc(e.region||''),doseStr(e.d)].filter(Boolean).join(' · ')}${e.side==='getrennt'?' · L/R':''}</small>${zielChips(e)}</button></div>
+    <div class="body">${zielSec(e)}
+    <div class="exsec"><span class="ftl">Durchführung</span><div class="bilanz">${bilKachel(e,'g',b.n,'gemacht')}${bilKachel(e,'p',b.p,'Probleme')}</div>
+    ${S.openEx===e.id&&BILMODE[e.id]?doneRow(e,BILMODE[e.id]):''}
+    ${e.first?`<div class="hint">erstmals am ${e.first}</div>`:''}</div>
     ${S.openEx===e.id?rtRow(e)+notesRow(e):''}
-    ${e.first?`<div class="hint">erstmals am ${e.first}</div>`:''}
-    ${e.video?`<div class="chips"><button class="chip sm" data-exvideo="${e.id}">▶ Video</button></div>`:''}
+    ${e.video?`<div class="exsec" data-exvideo="${e.id}"><span class="ftl">Video</span>${videoBox(e,'bib')}</div>`:''}
+    <div class="exsec"><span class="ftl">Cues</span>
     ${e.cues.length?`<div class="sortlist" data-sortcues="${e.id}">${e.cues.map((c,ci)=>`<div class="sortrow">${e.cues.length>1?DRAGH:''}<button class="cue edit" data-bec="${e.id}:${ci}">${esc(c)}</button></div>`).join('')}</div>`:'<div class="hint">Noch keine eigenen Cues.</div>'}
     <div class="chips"><button class="chip sm" data-addcue="${e.id}">+ Cue</button></div>
-    ${e.tags.map(t=>`<details><summary>${esc(t)} · ${(PRINZIP[t]||[]).length} Prinzip-Cues</summary>${(PRINZIP[t]||[]).map(c=>`<div class="cue p">${esc(c)}</div>`).join('')}</details>`).join('')}
-    <div class="row"><span class="lbl">Status</span><div class="chips">${['aktiv','testphase','geparkt','verworfen'].map(x=>`<button class="chip sm ${st===x?'on':''}" data-st="${e.id}:${x}">${x}</button>`).join('')}</div></div>
+    ${e.tags.map(t=>`<details><summary>${esc(t)} · ${(PRINZIP[t]||[]).length} Prinzip-Cues</summary>${(PRINZIP[t]||[]).map(c=>`<div class="cue p">${esc(c)}</div>`).join('')}</details>`).join('')}</div>
+    <div class="exsec"><div class="row"><span class="lbl">Status</span><div class="chips">${['aktiv','testphase','geparkt','verworfen'].map(x=>`<button class="chip sm ${st===x?'on':''}" data-st="${e.id}:${x}">${x}</button>`).join('')}</div></div>
     ${ip?`<button class="btn ghost wide" data-rmplan="${e.id}">Aus dem Plan nehmen</button>`:st!=='verworfen'?`<div class="row" style="flex-wrap:nowrap"><button class="btn ghost" style="flex:1" data-toplan="${e.id}">In den Plan</button>${qBtn('toplan')}</div>${qHint('toplan','Testphase: die Übung bleibt gekennzeichnet, bis du sie auf aktiv setzt. Sie darf im Plan stehen.')}`:''}
-    <div class="row" style="justify-content:flex-end"><button class="tog" data-exedit="${e.id}" style="font-size:13px">Bearbeiten</button></div>
+    <div class="row" style="justify-content:flex-end"><button class="tog" data-exedit="${e.id}" style="font-size:13px">Bearbeiten</button></div></div>
     </div></div>`}).join('')}</div></section>
   <button class="btn ghost wide" id="newExBib">+ Neue Übung</button>`;
   document.querySelectorAll('[data-bibopen]').forEach(b=>b.onclick=()=>openBibSheet(b.dataset.bibopen));
@@ -1500,7 +1619,9 @@ function rBib(){
   const qi=document.getElementById('q'); if(qi)qi.oninput=e=>{const v=e.target.value.toLowerCase();document.querySelectorAll('#exl .ex').forEach(it=>it.style.display=it.textContent.toLowerCase().includes(v)?'':'none')};
   document.getElementById('newExBib').onclick=()=>newExerciseSheet(id=>{S.openEx=id;S.bibFilter='alle';render();const c=document.querySelector('#exl .ex.open');if(c)c.scrollIntoView({block:'nearest'})});
   document.querySelectorAll('[data-exedit]').forEach(b=>b.onclick=()=>exEditSheet(exById(b.dataset.exedit)));
-  document.querySelectorAll('[data-exvideo]').forEach(b=>b.onclick=()=>openVideo((exById(b.dataset.exvideo)||{}).video));
+  document.querySelectorAll('[data-exziel]').forEach(b=>b.onclick=()=>exTestsSheet(exById(b.dataset.exziel),()=>{closeSheet();render()}));
+  // Kachel antippen klappt die Tage auf, erneut antippen wieder zu; nur eine Liste je Übung
+  document.querySelectorAll('[data-bil]').forEach(b=>b.onclick=()=>{const [id,m]=b.dataset.bil.split(':');BILMODE[id]=BILMODE[id]===m?null:m;render()});
   document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{S.openEx=S.openEx===b.dataset.open?null:b.dataset.open;render()});
   document.querySelectorAll('[data-rtday]').forEach(b=>b.onclick=()=>daySheet(b.dataset.rtday));
   document.querySelectorAll('[data-exday]').forEach(b=>b.onclick=()=>daySheet(b.dataset.exday));
@@ -1694,7 +1815,7 @@ function rKal(){
   const fut=d=>iso(d)>iso(today)?'fut':'';
   // Plan-Version ab diesem Tag: Akzentlinie am Kopf, in der Woche zusätzlich „vN"
   const pvOf=d=>P().versions.find(v=>v.from===iso(d)&&v.v>1);
-  const th=days.map(d=>{const pv=pvOf(d);return `<th class="${iso(d)===iso(today)?'today':''} ${wb(d)} ${fut(d)}${pv?' pv':''}"${pv?` title="Plan v${pv.v} ab ${dfmt(pv.from)}"`:''}>${M?`<span class="dn ${d.getDay()===1?'mo':''}">${String(d.getDate()).padStart(2,'0')}</span>`:wd(d)+'<br>'+String(d.getDate()).padStart(2,'0')+(pv?`<span class="pvl">v${pv.v}</span>`:'')}</th>`}).join('');
+  const th=days.map(d=>{const pv=pvOf(d);return `<th class="${iso(d)===iso(today)?'today':''} ${wb(d)} ${fut(d)}${pv?' pv':''}"${pv?` title="Plan v${pv.v} ab ${dfmt(pv.from)}"`:''}>${M?`<span class="dn ${d.getDay()===1?'mo':''}">${String(d.getDate()).padStart(2,'0')}</span>`:wd(d)+'<br> '+String(d.getDate()).padStart(2,'0')+(pv?`<span class="pvl">v${pv.v}</span>`:'')}</th>`}).join('');
   const body=rowsDef.map(([k0,l,f,pl,sp],i)=>`<tr class="${i&&GRP[k0]!==GRP[rowsDef[i-1][0]]?'sep':''}"><td>${l}</td>${sp?`<td class="day spark" colspan="${days.length}"><svg class="spark"></svg></td>`:days.map(d=>`<td class="day ${wb(d)} ${fut(d)} ${iso(d)===iso(today)?'today':''}" data-d="${iso(d)}"${pl&&iso(d)>=iso(today)?' data-plan="1"':''}>${f(dayOf(d),iso(d))}</td>`).join('')}</tr>`).join('');
   // kurz, damit Segment, „Zeilen“ und Navigation bei 400 px meist in eine Zeile passen
   const end=addD(start,days.length-1); const range=start.getMonth()===end.getMonth()?`${String(start.getDate()).padStart(2,'0')}.–${fmt(end)}`:`${fmt(start)}–${fmt(end)}`;
@@ -1741,10 +1862,10 @@ function rKal(){
   const leg=[PD&&'<span><i style="background:var(--k)"></i>Korrektiv</span><span><i style="background:var(--i)"></i>Intensiv</span><span><i style="background:var(--tennis)"></i>Tennis</span><span><i style="background:var(--laufen)"></i>Laufen</span><span><i style="background:var(--pause)"></i>Pause</span>',R.buero&&'<span><i style="background:var(--buero)"></i>Büro</span><span><i style="background:var(--hbuero)"></i>halber Büro</span>',R.kochen&&'<span><i style="background:var(--kochen)"></i>Kochen</span>',PD&&'<span><i class="sw K part"></i>unvollständig</span><span><i style="background:var(--accent);height:3px;width:12px;border-radius:0"></i>Plan geändert</span>',R.done&&'<span><i class="sw K xtra"></i>außerplanmäßig</span>',R.sym&&!S.symOpen&&'<span><svg width="16" height="8" aria-hidden="true" style="display:block"><line x1="0" x2="16" y1="4" y2="4" stroke="var(--ink3)" stroke-width="1" stroke-dasharray="3 3"/></svg>später am Tag</span>'].filter(Boolean).join('');
   main.innerHTML=`<div class="row between"><div class="row" style="gap:8px"><div class="seg"><button data-v="woche" class="${!M?'on':''}">Woche</button><button data-v="monat" class="${M?'on':''}">Monat</button></div>${rowsTog}</div><div class="row" style="gap:6px;margin-left:auto"><button class="chip sm" id="prev">‹</button><span class="hint">${range}</span><button class="chip sm" id="next">›</button></div></div>
   ${S.kalRowsOpen?`<div class="chips" id="rowChips"><button class="chip sm ${nVis===KROWS.length?'on':''}" data-row="*">Alle</button>${KROWS.map(([k,l])=>`<button class="chip sm ${R[k]?'on':''}" data-row="${k}">${l}</button>`).join('')}</div>`:''}
-  <div class="matrix-wrap"><table class="matrix ${M?'month':''}"><thead><tr><th></th>${th}</tr></thead><tbody>${body}</tbody></table></div>
+  <div class="matrix-wrap"><table class="matrix kalm ${M?'month':''}"><thead><tr><th></th>${th}</tr></thead><tbody>${body}</tbody></table></div>
   ${leg?`<div class="legend">${leg}</div>`:''}
   ${sum}<div class="hint">Tipp auf eine Zelle öffnet den Tag. Tipp auf Geplant an einem künftigen Tag plant diesen Tag einzeln, z. B. Tennis.${symHint} Zukunft zeigt nur Geplant. Akzentlinie am Datum = neue Plan-Version ab diesem Tag.${M?' Kräftige Linien = Wochenanfang. <span class="land-hint">Querformat: Zahlen und alle Tageslinien.</span>':''} „Zeilen“ blendet Zeilen aus, auch in der Wochenkarte.</div>`;
-  drawSparks(days);
+  kalFit(); drawSparks(days);
   document.getElementById('rowsTog').onclick=()=>{S.kalRowsOpen=!S.kalRowsOpen;render()};
   document.querySelectorAll('[data-row]').forEach(b=>b.onclick=()=>{const k=b.dataset.row;
     if(k==='*'){KROWS.forEach(([x])=>R[x]=true)}
@@ -1760,11 +1881,22 @@ function rKal(){
   const pn=document.getElementById('planNext'); if(pn)pn.onclick=()=>{setTab('bib');window.scrollTo(0,0);openBibSheet('plan');toast('Raster oben anpassen')};
   document.querySelectorAll('tr.wk').forEach(r=>r.onclick=()=>{S.view='woche';S.wk=-3+4*mk+(+r.dataset.c);render()});
 }
+// Querformat auf dem Handy: Zeilenhöhe so wählen, dass die ganze Matrix unter die Bedienzeile passt (20 bis 64 px)
+const KALQ_MQ='(orientation:landscape) and (max-height:560px)';
+function kalFit(){const t=document.querySelector('table.kalm');if(!t)return;
+  t.style.removeProperty('--kalrh');t.style.removeProperty('--kalfs');
+  if(!document.documentElement.classList.contains('kalq')||!matchMedia(KALQ_MQ).matches)return;
+  const top=t.getBoundingClientRect().top+scrollY, avail=innerHeight-top-12, n=t.rows.length;
+  const rh=Math.max(20,Math.min(64,Math.floor(avail/n)));
+  t.style.setProperty('--kalrh',rh+'px');
+  if(!t.classList.contains('month'))t.style.setProperty('--kalfs',Math.max(12,Math.min(17,Math.round(rh*0.42)))+'px')}
 // Symptom-Score als Kurve in der eingeklappten Symptomzeile: misst die Zellbreite und zeichnet in Pixeln, Punkte mittig unter den Tagesköpfen
 function drawSparks(days){
   const td=document.querySelector('td.spark'); if(!td)return;
   const svg=td.querySelector('svg.spark'); const n=days.length; const M=n>7;
-  const W=td.clientWidth, H=M?28:36, pad=M?4:6, cw=W/n;
+  // im Querformat (kalFit) wächst die Kurve mit der Zeilenhöhe
+  const kr=parseFloat(getComputedStyle(td.closest('table')).getPropertyValue('--kalrh'))||0;
+  const W=td.clientWidth, H=kr?Math.max(18,Math.floor(kr-2)):(M?28:36), pad=M?4:6, cw=W/n;
   const lbl=!M; // Beschriftung nur in der Woche
   // Spaltengrenzen aus den Tagesköpfen (im Monat sind die Spalten ungleich breit); Ersatz: gleich breite Spalten W/n
   const tr0=td.getBoundingClientRect(), x0=tr0.left+td.clientLeft;
