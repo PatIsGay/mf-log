@@ -302,6 +302,40 @@
   .exsec-h .tog{text-transform:none;letter-spacing:0;font-size:13px}
   .exsec.ziel{border-top:0;background:var(--accent-soft);border-left:3px solid var(--accent);border-radius:10px;padding:10px 12px}
   .exsec.ziel .exsec-h>span{color:var(--accent)}
+  .exsec.ziel .zps{font-size:12px;font-weight:400;color:var(--ink2)}
+  /* Notizen zur Übung (Karte und Training unter den Cues): höchstens 6 sichtbar (notesFit), Rest im eigenen Scrollbereich; Tipp ändert */
+  .trnotes{margin-top:8px;border-top:1px solid var(--line);padding-top:6px}
+  .trn-h{font-size:12px;font-weight:700;color:var(--ink2);margin-bottom:2px}
+  /* Kopf „Notizen“ mit „+“ rechts; Feld zum Hinzufügen direkt darunter, „✓“ im Feld */
+  .nhead{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:22px}
+  .nplus{position:relative;flex:0 0 auto;width:22px;height:22px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--accent);font:inherit;font-size:16px;font-weight:700;line-height:1;letter-spacing:0;text-transform:none;display:inline-flex;align-items:center;justify-content:center;padding:0 0 1px;cursor:pointer}
+  .nplus::after{content:"";position:absolute;inset:-10px}
+  .nplus[hidden]{display:none}
+  .nadd{position:relative;margin:4px 0 6px}
+  .nadd input{width:100%;box-sizing:border-box;font-size:13px;line-height:1.35;padding:6px 36px 6px 9px;border-radius:8px}
+  .nadd .nok{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-ink);font:inherit;font-size:13px;font-weight:800;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer}
+  .nadd .nok::after{content:"";position:absolute;inset:-8px}
+  .nlist{display:block;position:relative;min-width:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+  .nlist.more{box-shadow:inset 0 -10px 8px -8px var(--line)}
+  .nlist .nl{display:block;width:100%;text-align:left;background:none;border:0;border-top:1px solid var(--line);border-radius:0;margin:0;padding:4px 0;font:inherit;font-size:13px;line-height:1.35;color:var(--ink);overflow-wrap:anywhere;cursor:pointer}
+  .nlist .nl:first-child{border-top:0}
+  .nlist .nl .nd{color:var(--ink2);font-weight:600;margin-right:4px;white-space:nowrap}
+  /* Prinzipien in der Rettungskiste: je Tag eingeklappt, Cues wie Notizzeilen, „+“ darunter */
+  .pzt{border-top:1px solid var(--line);padding:6px 0}
+  .pzt:first-child{border-top:0}
+  .pzt summary{font-size:14px;color:var(--ink);font-weight:600;padding:4px 0}
+  .pzt .pzn{color:var(--ink2);font-weight:400}
+  .pzl .pzc{display:block;width:100%;text-align:left;font-size:13px;line-height:1.35;color:var(--ink);padding:5px 0 5px 12px;border-top:1px solid var(--line2);overflow-wrap:anywhere}
+  .pzl .pzc:first-child{border-top:0}
+  .pzadd{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 0 2px 12px}
+  .pzadd .pzdel{font-size:12px}
+  .pzadd .nadd{flex:1;min-width:0}
+  #pzHead{margin-bottom:2px}
+  /* Merksätze in der Rettungskiste: groß lesbar, Akzentstreifen, Datum darunter */
+  .merk{background:var(--accent-soft);border-left:3px solid var(--accent);border-radius:10px;padding:10px 12px;margin:0 0 8px}
+  .merk .mt{display:block;width:100%;text-align:left;background:none;border:0;padding:0;margin:0;font:inherit;font-size:17px;line-height:1.4;font-weight:500;color:var(--ink);white-space:pre-wrap;overflow-wrap:anywhere;cursor:pointer}
+  .merk .mf{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:6px}
+  .merk .md{font-size:12px;color:var(--ink2)}
   .zrow{font-size:14px;line-height:1.35;color:var(--ink)}
   .zrow .zw{font-size:12px;color:var(--ink2)}
   .zleer{font-size:13px;color:var(--ink2)}
@@ -309,10 +343,6 @@
   .zchips{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-top:5px}
   .zchips .zl{font-size:11px;color:var(--ink2);margin-right:2px}
   .zchip{font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--accent-soft);color:var(--accent);white-space:nowrap}
-  .nrow .rts{display:flex;flex-direction:column;min-width:0}
-  .nrow .nl{display:block;width:100%;text-align:left;font-size:12px;color:var(--ink);padding:4px 0;border-top:1px solid var(--line2)}
-  .nrow .nl:first-child{border-top:0}
-  .nrow .nl .nd{color:var(--ink2)}
   /* Tests-Sheet: Retests je Test unter der Tabelle, Plan-Version unter den Datumsspalten */
   .rtblock{display:flex;flex-direction:column;margin-top:10px}
   .rtblock .ftl{font-size:11px;line-height:1.25;color:var(--ink2);padding-bottom:2px}
@@ -494,7 +524,7 @@
 // /test/ (lokal, app/test/) oder ?kanal=test
 const KANAL = (window.MFLOG_KANAL) || (/\/(mf-)?test\//.test(location.pathname) || /[?&]kanal=test\b/.test(location.search) ? 'test' : 'app');
 const TEST = KANAL==='test';
-const APP_VERSION='1.0.9';
+const APP_VERSION='1.0.17';
 const STORE_KEY = TEST?'mflog-test-v1':'mflog-v1';
 const APP_NAME = TEST?'MF-Log Test':'MF-Log';
 document.title = APP_NAME;
@@ -527,6 +557,10 @@ const TAG_AKT = ['Buero','HalbBuero','Kochen']; let tagMore=false;
 const TYPES = {K:{l:'Korrektiv',rec:0},I:{l:'Intensiv',rec:48},Pause:{l:'Pause'},Tennis:{l:'Tennis',rec:48},Laufen:{l:'Laufen',rec:24},Kochen:{l:'Kochen lang'},Buero:{l:'Bürotag',fix:480},HalbBuero:{l:'Halber Bürotag',fix:240}};
 // Prinzip-Tags sind Stammdaten; die Prinzip-Cue-Texte liefert der Nutzer (Testkanal: Beispieltexte). Laufender Stand in S.prinzip.
 const PRINZIP_TAGS=['Atmung','Knie-Vorschub','Becken-Aufrichtung','Fußposition','Brustkorb-Rotation'];
+// Prinzipien sind seit 1.0.16 vom Nutzer pflegbar (anlegen, löschen): aktuelle Liste in S.prinzipTags, sonst die fünf Start-Prinzipien.
+// Gelöschte Prinzipien verschwinden überall; das Tag an Übungen bleibt gespeichert, wird aber nicht mehr angezeigt.
+const pzTags=()=>Array.isArray(S.prinzipTags)?S.prinzipTags:PRINZIP_TAGS;
+const pzHas=t=>pzTags().includes(t);
 const prinzipSeed=()=>TEST?{
   'Atmung':['Ruhig und lange ausatmen','Schultern bleiben unten','Nicht die Luft anhalten'],
   'Knie-Vorschub':['Knie kontrolliert nach vorn, ohne Hohlkreuz'],
@@ -570,11 +604,12 @@ const TESTS = [
 ];
 // Beispiel-Testwerte (feste Spalten 20.08. und 03.09.) nur im Testkanal
 const TESTVALS = TEST?{'Hüftaußenrotation':[['20.08.',35,40],['03.09.',40,40]],'Hüftinnenrotation':[['20.08.',25,20],['03.09.',30,25]],'Hüftbeugung':[['20.08.','4 cm','6 cm'],['03.09.','2 cm','5 cm']],'Gestrecktes Beinheben (SLR)':[['20.08.',60,70],['03.09.',70,70]],'Schulteraußenrotation':[['20.08.',75,80],['03.09.',80,80]],'Schulterinnenrotation':[['20.08.',50,45],['03.09.',55,50]],'Schulterflexion':[['20.08.',160,165],['03.09.',165,165]],'Kniebeuge':[['20.08.','8 cm','–'],['03.09.','6 cm','–']],'Vorbeuge':[['20.08.','12 cm','–'],['03.09.','9 cm','–']],'Wandstehen PSIS-Kontakt':[['03.09.','nein','–']],'Goblet Hold 60°':[['03.09.','70 s','–']]}:{};
-// Rettungskiste: Einträge in S.rettung ({id,t,a,x}); Beispieleinträge nur im Testkanal
+// Rettungskiste: Einträge in S.rettung ({id,t,a,x}, Merksatz zusätzlich d = Datum ISO); Beispieleinträge nur im Testkanal
 const RETT_SEED=()=>TEST?[
   {id:'r1',t:'Ruhige Pause im Liegen',a:'Notiz',x:'Zehn Minuten hinlegen, langsam atmen, nichts Neues ausprobieren.'},
   {id:'r2',t:'Lange ausatmen',a:'Cue',x:'Fünf ruhige Atemzüge, jeweils lange ausatmen.'},
   {id:'r3',t:'Sanfte Mobilisation',a:'Übung',x:'Leichte Bewegungen ohne Last, 3 min.'},
+  {id:'r4',t:'Erst ausatmen, dann bewegen.',a:'Merksatz',x:'',d:iso(addD(today,-2))},
 ]:[];
 
 // ---------- Zustand ----------
@@ -676,6 +711,8 @@ function fixVideo(e){if(e.video===true)e.video=TEST?vidPh(e.id):'';if(typeof e.v
 function hydrate(obj){
   if(!obj||typeof obj!=='object'||Array.isArray(obj))throw new Error('keine Daten');
   S=obj; resetContent();
+  // offenes Notizfeld nicht wiederherstellen (Text ist gespeichert, das Feld öffnet nur „+“ oder „!“)
+  if(S.session&&Array.isArray(S.session.items))S.session.items.forEach(i=>{if(i)delete i.noteOpen});
   if(!S.days||typeof S.days!=='object')S.days={};
   if(!S.plan)initPlan();
   if(!Array.isArray(S.plan.ziele)){S.plan.ziele=ZIELE_SEED();S.plan.zseq=S.plan.ziele.length}
@@ -698,6 +735,7 @@ function hydrate(obj){
   Object.entries(S.dose||{}).forEach(([id,d])=>{const e=EX.find(x=>x.id===id);if(e)e.d=d});
   EX.forEach(e=>{if(!Array.isArray(e.tags))e.tags=[];if(!Array.isArray(e.cues))e.cues=[];if(!e.d)e.d={sets:1,n:1,u:'Wdh'};fixVideo(e)});
   Object.entries(S.prinzip||{}).forEach(([k,arr])=>{if(Array.isArray(arr))PRINZIP[k]=arr});
+  pzTags().forEach(t=>{if(!Array.isArray(PRINZIP[t]))PRINZIP[t]=[]});
   fixKalRows(); ensureDay(iso(today));
 }
 function freshState(){
@@ -777,6 +815,7 @@ document.getElementById('mehr').addEventListener('click',()=>mehrSheet());
 function setTabH(){const b=document.querySelector('nav.tabs .bar');if(b)document.documentElement.style.setProperty('--tabh',b.offsetHeight+'px')}
 window.addEventListener('resize',setTabH);
 function render(){
+  if(BIB_NOTE&&(S.tab!=='bib'||S.openEx!==BIB_NOTE.id)){if(BIB_NOTE.n)BIB_NOTE.n.t=BIB_NOTE.n.t.trim();BIB_NOTE=null}
   document.documentElement.classList.toggle('kalq',S.tab==='kal');
   setTabH(); main.classList.toggle('withbar',S.tab==='training'&&!!S.session&&!!S.sessShow);
   // laufende Einheit nach jeder Änderung als offenen Eintrag speichern
@@ -786,9 +825,16 @@ function render(){
   document.getElementById('subtitle').textContent=`${wd(today)}, ${fmt(today)}${today.getFullYear()}`;
   vidCheck(); const vk=vidKeep();
   ({heute:rHeute,training:rTraining,bib:rBib,kal:rKal})[S.tab]();
-  vidPlace(vk); vidThumbs();
+  vidPlace(vk); vidThumbs(); notesFit();
   save();
 }
+// Notizlisten (Karte und Training): Liste endet nach der NOTE_MAX-ten Notiz (Zeilen können umbrechen, darum gemessen, mit Bruchteilen
+// von Pixeln), Rest per Wischen; Scrollstand je Liste bleibt beim Neuzeichnen
+const NOTE_SCROLL={};
+function notesFit(){document.querySelectorAll('.nlist').forEach(l=>{const c=l.children;l.style.maxHeight='';
+  const mehr=c.length>NOTE_MAX; l.classList.toggle('more',mehr); if(!mehr)return;
+  l.scrollTop=0; l.style.maxHeight=(c[NOTE_MAX-1].getBoundingClientRect().bottom-l.getBoundingClientRect().top)+'px';
+  l.scrollTop=NOTE_SCROLL[l.dataset.nlist]||0; l.onscroll=()=>{NOTE_SCROLL[l.dataset.nlist]=l.scrollTop}})}
 
 // ---------- Heute ----------
 function scale(cur,onSel,small){return `<div class="scale">${[...Array(11).keys()].map(v=>`<button class="${v===cur?'on '+cls(v):''}" data-v="${v}">${v}</button>`).join('')}</div>`}
@@ -822,7 +868,6 @@ function rHeute(){
         <div class="hint" style="margin-top:6px">0 kein Schmerz · 3 tolerierbar · 5 sehr beunruhigend · 7 sehr intensiv · 10 unvorstellbar</div></div>
       ${y.eveningDone?'':`<div class="row between"><div class="lbl">Gestern</div><div class="chips">${CHIPS.map(c=>`<button class="chip sm ${y.chips.includes(c)?'on':''}" data-ychip="${c}">${c}</button>`).join('')}</div></div>
       <div class="hint" style="margin-top:-4px">Stress und Sitzen gelten für den Vortag. Für heute in „Später am Tag“.</div>`}
-      <input type="text" id="note" placeholder="Notiz, z. B. unruhig geschlafen" value="${esc(d.note||'')}">
       <button class="btn primary wide" id="saveCheck">Speichern</button>
     </div>
   </section>`;
@@ -834,14 +879,13 @@ function rHeute(){
   // nach dem Speichern eingeklappt wie der Check-in; „ändern“ setzt S.laterOpen
   const abendDone=abendFull&&!!d.eveningDone&&S.laterOpen!==iso(today);
   const abendHtml=abendDone?`<section class="card" id="abendCard"><h2>Später am Tag <span class="badge">erfasst</span></h2>
-    <div class="row between" id="abRow" style="cursor:pointer;flex-wrap:nowrap"><div class="row" style="gap:6px"><span class="hint">Form</span><span class="tf ${cls(d.tfA)}">${d.tfA??'–'}</span><span class="hint">Sympt.</span><span class="sy sytile ${scAC}"${scAC?'':' style="background:var(--surface2)"'}>${fmtN(scA)}</span>${d.chips.length||tagLbl.length?`<span style="font-size:13px;font-weight:600">${[d.chips.map(esc).join(', '),tagLbl.join(', ')].filter(Boolean).join(' · ')}</span>`:''}</div><span class="row" style="gap:8px;flex-wrap:nowrap"><button class="chip sm" id="abNote">+ Notiz</button><button class="tog" id="abEdit" style="font-size:13px">ändern</button></span></div></section>`
+    <div class="row between" id="abRow" style="cursor:pointer;flex-wrap:nowrap"><div class="row" style="gap:6px"><span class="hint">Form</span><span class="tf ${cls(d.tfA)}">${d.tfA??'–'}</span><span class="hint">Sympt.</span><span class="sy sytile ${scAC}"${scAC?'':' style="background:var(--surface2)"'}>${fmtN(scA)}</span>${d.chips.length||tagLbl.length?`<span style="font-size:13px;font-weight:600">${[d.chips.map(esc).join(', '),tagLbl.join(', ')].filter(Boolean).join(' · ')}</span>`:''}</div><button class="tog" id="abEdit" style="font-size:13px">ändern</button></div></section>`
   :abendFull?`<section class="card" id="abendCard"><h2>Später am Tag <span class="badge">optional</span></h2><div class="row between"><div class="lbl">Tagesform jetzt</div><span class="tf ${cls(d.tfA)}">${d.tfA==null?'–':d.tfA}</span></div><div style="margin-top:8px">${scale(d.tfA).replace('class="scale"','class="scale" id="abend"')}</div>
     <div style="margin-top:10px"><div class="row between"><div class="lbl">Symptome jetzt</div><button class="chip sm" id="wieMorgen">wie heute Morgen</button></div>
       <div class="stack" style="margin-top:8px">${symAbend||'<div class="hint">Kein aktives Symptom.</div>'}</div>
       ${scA!=null?`<div class="row" style="margin-top:8px;gap:6px"><span class="hint">Score jetzt</span><span class="sy sytile ${scAC}"${scAC?'':' style="background:var(--surface2)"'}>${fmtN(scA)}</span></div>`:''}</div>
     <div class="row between" style="margin-top:10px"><div class="lbl">Heute</div><div class="chips">${CHIPS.map(c=>`<button class="chip sm ${d.chips.includes(c)?'on':''}" data-chip="${c}">${c}</button>`).join('')}</div></div>
     <div class="row between" style="margin-top:8px;align-items:flex-start"><div class="lbl" style="padding-top:5px">Tag</div><div class="chips" id="tagChips" style="justify-content:flex-end">${tagVis.map(t=>`<button class="chip sm ${tagOn(t)?'on':''}" data-tag="${t}" aria-pressed="${tagOn(t)}">${TYPES[t].l}</button>`).join('')}${tagVis.length<TAG_AKT.length?'<button class="chip sm" id="tagMore">weitere ▸</button>':''}</div></div>
-    <div class="chips" style="margin-top:8px"><button class="chip sm addchip" id="addNote">+ Notiz</button></div>
     <div class="hint" style="margin-top:6px">Eigener Wert für später am Tag, der Morgen bleibt der Kalenderwert. Stress und Sitzen für heute.</div>
     <button class="btn primary wide" style="margin-top:10px" id="saveAbend">Speichern</button></section>`:`<section class="card" id="abendCard"><div class="row between"><h2 style="margin:0">Später am Tag <span class="badge">optional</span></h2><button class="tog" id="abendNow" style="font-size:13px">jetzt zeigen</button></div></section>`;
   // echter Kanal beim Start: Hinweis, wo Plan und Übungen angelegt werden (verschwindet mit dem ersten Block)
@@ -875,8 +919,7 @@ function rHeute(){
       if(y.sleep!=null)d.sleep=y.sleep; if(y.sq)d.sq=y.sq;
       toast('Symptome und Schlaf wie gestern');render()};
     document.querySelectorAll('[data-ychip]').forEach(b=>b.onclick=()=>{const c=b.dataset.ychip;y.chips=y.chips.includes(c)?y.chips.filter(x=>x!==c):[...y.chips,c];render()});
-    document.getElementById('note').onchange=e=>{d.note=e.target.value;save()};
-    document.getElementById('saveCheck').onclick=()=>{d.note=document.getElementById('note').value;if(d.tf==null){toast('Tagesform fehlt noch');return}if(d.sleep==null)d.sleep=slShow;if(d.sq==null)d.sq=sqShow;d.checkedIn=true;S.checkinOpen=false;render();toast('Check-in gespeichert');window.scrollTo({top:0,behavior:'smooth'})};
+    document.getElementById('saveCheck').onclick=()=>{if(d.tf==null){toast('Tagesform fehlt noch');return}if(d.sleep==null)d.sleep=slShow;if(d.sq==null)d.sq=sqShow;d.checkedIn=true;S.checkinOpen=false;render();toast('Check-in gespeichert');window.scrollTo({top:0,behavior:'smooth'})};
   }
   document.querySelectorAll('[data-chip]').forEach(b=>b.onclick=()=>{const c=b.dataset.chip;d.chips=d.chips.includes(c)?d.chips.filter(x=>x!==c):[...d.chips,c];render()});
   const ab=document.getElementById('abend'); if(ab)ab.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;d.tfA=+b.dataset.v;render()});
@@ -886,8 +929,7 @@ function rHeute(){
   const sa=document.getElementById('saveAbend'); if(sa)sa.onclick=()=>{if(!d.syA)d.syA={};symRows(d).forEach(s=>{const v=syVal(d,s.id);if(d.syA[s.id]==null&&v!=null)d.syA[s.id]=v});d.eveningDone=true;S.laterOpen=false;save();render();toast('Später am Tag gespeichert');
     // die Seite wird kürzer; die zugeklappte Zeile soll im Bild bleiben (unter der festen Kopfzeile)
     const ac=document.getElementById('abendCard');if(ac){const r=ac.getBoundingClientRect(),h=document.querySelector('.top').offsetHeight;if(r.top<h||r.bottom>innerHeight)window.scrollTo({top:Math.max(0,scrollY+r.top-h-8),behavior:'smooth'})}};
-  const abr=document.getElementById('abRow'); if(abr)abr.onclick=e=>{if(e.target.closest('#abNote'))return;S.laterOpen=iso(today);render()};
-  const abn=document.getElementById('abNote'); if(abn)abn.onclick=e=>{e.stopPropagation();noteSheet()};
+  const abr=document.getElementById('abRow'); if(abr)abr.onclick=()=>{S.laterOpen=iso(today);render()};
   document.querySelectorAll('[data-ycont]').forEach(b=>b.onclick=()=>{startSession(b.dataset.ycont,iso(addD(today,-1)));setTab('training')});
   // Tag-Chips: Tipp schaltet für heute ein oder aus; Bürotag und halber Bürotag schließen sich aus
   document.querySelectorAll('[data-tag]').forEach(b=>b.onclick=()=>{const t=b.dataset.tag;const on=tagOn(t);
@@ -895,7 +937,6 @@ function rHeute(){
     for(let i=d.done.length-1;i>=0;i--)if(weg(d.done[i]))d.done.splice(i,1);
     if(!on)d.done.push(t==='Kochen'?{type:'Kochen',dur:120,int:'mittel'}:{type:t});render()});
   const tm=document.getElementById('tagMore'); if(tm)tm.onclick=()=>{tagMore=true;render()};
-  const an2=document.getElementById('addNote'); if(an2)an2.onclick=()=>noteSheet();
   document.getElementById('openRett').onclick=()=>rettSheet();
   const tp=document.getElementById('toPlan'); if(tp)tp.onclick=()=>{setTab('bib');openBibSheet('plan')};
   const bk=document.getElementById('bkRow'); if(bk)bk.onclick=()=>{exportData();render()};
@@ -1040,23 +1081,30 @@ function rTraining(){
     document.querySelectorAll('[data-aedit]').forEach(b=>b.onclick=()=>aktEditSheet(tk,+b.dataset.aedit));
     return;
   }
-  const rows=s.items.map((it,idx)=>{const e=exById(it.id);
+  const curEntry=(i=>i>=0?S.days[s.date].done[i]:null)(S.days[s.date]?findEntry(s.date,s.block):-1);
+  // Notizen zur Übung unter den Cues (nur offene Übung, „+“ fügt hinzu): höchstens NOTE_MAX sichtbar, weitere im eigenen Scrollbereich (notesFit); Tipp ändert oder löscht
+  // Notiz dieser Einheit: während das Feld offen ist, steht sie nur im Feld, danach oben in der Liste
+  const trNotes=(e,it,idx)=>{const all=exNoteList(e.id,it.noteOpen?curEntry:null);
+    return `<div class="trnotes"><div class="trn-h nhead"><span>Notizen${all.length>NOTE_MAX?` · ${all.length}`:''}</span>${it.noteOpen?'':notePlus('tr:'+idx)}</div>`
+      +(it.noteOpen?noteInput('tr:'+idx,it.note,it.pain?'Was war? z. B. Ziehen rechts, Fuß gerutscht':'Notiz zur Übung, z. B. nur rechts super',`data-note="${idx}"`):'')
+      +(all.length?noteListHtml(all,'tr:'+e.id):'')+`</div>`};
+  // „✓“ oder Eingabetaste: Feld schließen; die Notiz (schon gespeichert) steht danach oben in der Liste
+  const noteDoneTr=idx=>{const it=s.items[idx],i=document.querySelector(`#exlist [data-ninput="tr:${idx}"]`),v=(i?i.value:(it.note||'')).trim();
+    if(v)it.note=v;else delete it.note;it.noteOpen=false;if(i)i.blur();render();if(v)toast('Notiz gespeichert')};
+  const rows=s.items.map((it,idx)=>{const e=exById(it.id); if(!it.open)it.noteOpen=false;
     // Zugeklappt nur die Anzahl eigener Cues; aufgeklappt eigene und Prinzip-Cues vollständig im Kasten
     const nc=e.cues.length, cnt=it.open?'':`<span class="cuecnt"> · ${nc?nc+(nc===1?' Cue':' Cues'):'keine Cues'}</span>`;
-    const box=!it.open?'':`<div class="cuebox">${nc?e.cues.map((c,ci)=>`<button class="cueline" data-ec="${idx}:${ci}">${esc(c)}</button>`).join(''):'<div class="cuenone">Noch keine eigenen Cues.</div>'}${e.tags.filter(t=>(PRINZIP[t]||[]).length).map(t=>`<div class="cuetag">${esc(t)}</div>${(PRINZIP[t]||[]).map((c,ci)=>`<button class="cueline p" data-pc="${t}:${ci}">${esc(c)}</button>`).join('')}`).join('')}</div>`;
+    const box=!it.open?'':`<div class="cuebox">${nc?e.cues.map((c,ci)=>`<button class="cueline" data-ec="${idx}:${ci}">${esc(c)}</button>`).join(''):'<div class="cuenone">Noch keine eigenen Cues.</div>'}${e.tags.filter(t=>pzHas(t)&&(PRINZIP[t]||[]).length).map(t=>`<div class="cuetag">${esc(t)}</div>${(PRINZIP[t]||[]).map((c,ci)=>`<button class="cueline p" data-pc="${t}:${ci}">${esc(c)}</button>`).join('')}`).join('')}</div>`;
     return `<div class="ex ${it.r?'done':''} ${it.skip?'skipped':''} ${it.open?'open':''}" data-i="${idx}"><span class="swhint l">überspringen</span><span class="swhint r">doch machen</span>
       <div class="head"><div class="name"><button class="nm" data-tog="${idx}"><b>${esc(e.name)}${it.extra?' <span class="badge">außerplanmäßig</span>':''}${exStatus(e)==='testphase'?' <span class="badge test">Testphase</span>':''}</b></button><small><button class="chip sm dose ${it.d&&!sameDose(it.d,e.d)?'dev':''}" data-dose="${idx}">${doseStr(it.d||e.d)}${it.d&&!sameDose(it.d,e.d)?' · geändert':''} ✎</button>${e.side==='getrennt'?`<span class="sidet"> · ${it.side==='L'?'nur links':it.side==='R'?'nur rechts':'beide Seiten'}</span>`:''}${cnt}${!it.open&&it.rt&&it.rt.nach?'<span style="color:var(--ink2)"> · Retest</span>':''}${it.skip?' · übersprungen':''}</small></div>
         <div class="rate"><button data-r="1" class="${it.r?'on':''}" title="gemacht" aria-pressed="${!!it.r}">✓</button><button data-pain class="pain ${it.pain?'on':''}" title="Problem oder Schmerz" aria-pressed="${!!it.pain}">!</button></div></div>
-      <div class="body">${it.open?videoBox(e,'tr'):''}${box}
+      <div class="body">${it.open?videoBox(e,'tr'):''}${box}${it.open?trNotes(e,it,idx):''}
         ${!it.rt?'':`<div class="rtline"><span>${esc(testShort(it.rt.test))} · ${rtText(it.rt)}</span>${it.rt.nach?`<button class="chip sm" data-rtdel="${idx}">ändern</button>`:`<button class="chip sm" data-rtnach="${idx}">danach messen</button>`}</div>`}
-        <div class="exacts">${it.rt?'':`<button data-rt="${idx}">Test davor</button>`}${timerOn(it)?`<button class="tmr" data-timerstop="${idx}" aria-label="Timer stoppen">⏱ ${fmtSec(timerLeft())}</button>`:`<button data-timer="${idx}">Timer</button>`}<button data-notetog="${idx}" aria-pressed="${!!(it.noteOpen||it.note||it.pain)}">Notiz</button><button data-more="${idx}" aria-label="Mehr: + Cue, überspringen">⋯</button></div>
-        ${it.noteOpen||it.note||it.pain?`<input type="text" placeholder="${it.pain?'Was war? z. B. Ziehen rechts, Fuß gerutscht':'Kurznotiz, z. B. nur rechts super'}" value="${esc(it.note||'')}" data-note="${idx}">`:''}
+        <div class="exacts">${it.rt?'':`<button data-rt="${idx}">Test davor</button>`}${timerOn(it)?`<button class="tmr" data-timerstop="${idx}" aria-label="Timer stoppen">⏱ ${fmtSec(timerLeft())}</button>`:`<button data-timer="${idx}">Timer</button>`}<button data-more="${idx}" aria-label="Mehr: + Cue, überspringen">⋯</button></div>
       </div></div>`}).join('');
   const done=s.items.filter(i=>i.r).length, total=s.items.filter(i=>!i.skip).length, todo=s.items.filter(exTodo).length;
-  const noteShow=!!(s.noteOpen||s.note);
   main.innerHTML=`<section class="card" id="sesshead"><div class="row between" style="flex-wrap:nowrap"><div style="min-width:0"><b>${esc(s.label)}</b>${s.date!==iso(today)?` <span class="badge">Nachtrag ${dfmt(s.date)}</span>`:''}${s.snapshot!=null?' <span class="badge">fortgesetzt</span>':''}<div class="hint" style="display:flex;align-items:center;gap:8px">${done} von ${total} gemacht · ${durStr(sessMin(s))}${qBtn('haken')}</div></div><button class="btn ghost" id="addEx">+ Übung</button></div>${qHint('haken','Haken = gemacht. „!“ = Problem bei der Ausführung oder Schmerz, schreib kurz dazu, was war. Wirkung misst du mit „Test davor“, die Reaktion später am Tag und am Folgetag zeigt der Kalender.','margin-top:8px')}
-    <div class="row between" style="margin-top:4px;flex-wrap:nowrap"><button class="tog" id="snoteTog" aria-pressed="${noteShow}" style="font-size:13px;font-weight:600;color:var(--ink2)">Notiz</button><button class="tog danger" id="abort">Verwerfen</button></div>
-    ${noteShow?`<input type="text" id="snote" style="margin-top:8px" placeholder="Notiz zur Einheit, z. B. eilig, nur Hälfte" value="${esc(s.note||'')}">`:''}</section>
+    <div class="row" style="margin-top:4px;justify-content:flex-end"><button class="tog danger" id="abort">Verwerfen</button></div></section>
   <section class="card"><div class="list" id="exlist">${rows}</div></section>
   <div id="sessbar"><button class="btn primary" id="fin">${todo?`Fertig · ${todo} offen`:'Fertig'}</button></div>`;
   const list=document.getElementById('exlist');
@@ -1073,17 +1121,18 @@ function rTraining(){
     const b=ev.target.closest('button'); const row=ev.target.closest('.ex'); if(!row) return; const idx=+row.dataset.i; const it=s.items[idx];
     // Tipp in die Kopfzeile außerhalb der Knöpfe (oder auf den Namen) klappt auf oder zu; nur eine Übung offen
     if((!b||b.classList.contains('nm'))&&ev.target.closest('.head')){const o=!it.open;s.items.forEach(x=>x.open=false);it.open=o;render();return}
-    if(!b) return; const e=exById(it.id);
+    if(!b) return; if(b.dataset.nedit!=null){noteEditSheet(b.dataset.nedit);return} const e=exById(it.id);
     if(b.dataset.dose!=null){doseSheet(e,render,{session:it});return}
     if(b.dataset.r){it.r=it.r?null:1;it.skip=false;it.t=it.r?Date.now():null;if(it.r&&it.open)openNext(s.items,idx);render();return}
-    // „!“: Ausnahme setzen, gilt zugleich als gemacht; Übung bleibt bzw. wird offen, Fokus in die Kurznotiz. Erneuter Tipp hebt nur die Ausnahme auf.
+    // „!“: Ausnahme setzen, gilt zugleich als gemacht; Übung bleibt bzw. wird offen, Notizfeld offen mit Fokus. Erneuter Tipp hebt nur die Ausnahme auf.
     if(b.hasAttribute('data-pain')){if(it.pain){it.pain=false;render();return}
-      it.pain=true;if(!it.r){it.r=1;it.skip=false;it.t=Date.now()}if(!it.open){s.items.forEach(x=>x.open=false);it.open=true}render();
-      const inp=document.querySelector(`#exlist [data-note="${idx}"]`);if(inp)inp.focus();return}
+      it.pain=true;if(!it.r){it.r=1;it.skip=false;it.t=Date.now()}if(!it.open){s.items.forEach(x=>x.open=false);it.open=true}it.noteOpen=true;render();
+      noteFocus('tr:'+idx);return}
     if(b.dataset.rt!=null){rtStart(it,render);return}
     if(b.dataset.rtnach!=null){rtAfter(it,render);return}
     if(b.dataset.rtdel!=null){delete it.rt;render();return}
-    if(b.dataset.notetog!=null){if(it.note||it.pain){const inp=row.querySelector('[data-note]');if(inp)inp.focus();return}it.noteOpen=!it.noteOpen;render();if(it.noteOpen){const inp=document.querySelector(`#exlist [data-note="${idx}"]`);if(inp)inp.focus()}return}
+    if(b.dataset.nadd!=null){it.noteOpen=true;render();noteFocus('tr:'+idx);return}
+    if(b.dataset.nok!=null){noteDoneTr(idx);return}
     if(b.dataset.more!=null){moreSheet(idx);return}
     if(b.dataset.timer!=null){startTimer(it,e);render();return}
     if(b.dataset.timerstop!=null){stopTimer();render();toast('Timer gestoppt');return}
@@ -1098,10 +1147,10 @@ function rTraining(){
       if(m==='cue'){newCue(it);return}
       closeSheet();
       if(m==='skip'){it.skip=!it.skip;if(it.skip){it.r=null;it.t=Date.now();if(it.open)openNext(s.items,idx)}render();toast(it.skip?'Übersprungen':'Doch machen');return}})};
-  // Kurznotizen und Notiz zur Einheit: bei jeder Eingabe mitspeichern, ohne neu zu zeichnen (Fokus bleibt)
-  list.querySelectorAll('[data-note]').forEach(i=>i.oninput=e=>{s.items[+i.dataset.note].note=e.target.value;syncSession();save()});
-  const sn=document.getElementById('snote'); if(sn)sn.oninput=e=>{s.note=e.target.value;syncSession();save()};
-  document.getElementById('snoteTog').onclick=()=>{if(s.note){if(sn)sn.focus();return}s.noteOpen=!s.noteOpen;render();const i=document.getElementById('snote');if(i)i.focus()};
+  // Notiz zur Übung: bei jeder Eingabe mitspeichern, ohne neu zu zeichnen (Fokus bleibt)
+  list.querySelectorAll('[data-note]').forEach(i=>{i.oninput=e=>{s.items[+i.dataset.note].note=e.target.value;syncSession();save()};
+    i.onkeydown=ev=>{if(ev.key==='Enter'){ev.preventDefault();noteDoneTr(+i.dataset.note)}}});
+  list.querySelectorAll('[data-nok]').forEach(b=>b.onmousedown=ev=>ev.preventDefault());
   // + Übung: bei getrennter Übung zuerst die Seite wählen (wie „In den Plan“), dann Testphase wie bisher
   document.getElementById('addEx').onclick=()=>pickExercise((id,test)=>{const ex=exById(id);
     const add=side=>{s.items.push({id,extra:true,side});if(test&&!inPlan(id)&&exStatus(ex)!=='testphase'){S.exStatus[id]='testphase';addEvent(ex.name+': Status Testphase (im Training)');toast('Als Testphase markiert')}render()};
@@ -1261,7 +1310,7 @@ function syncSession(){
   s.entryIdx=i;
 }
 // Einheit verlassen (Reiterwechsel, andere Einheit): Zeit anhalten, Ansicht schließen; S.session bleibt
-function parkSession(){stopTimer();const s=S.session;if(!s)return;if(s.segStart){s.active=sessMin(s);s.segStart=null;s.segments=(s.segments||0)+1}S.sessShow=false}
+function parkSession(){stopTimer();const s=S.session;if(!s)return;s.items.forEach(i=>{delete i.noteOpen});if(s.segStart){s.active=sessMin(s);s.segStart=null;s.segments=(s.segments||0)+1}S.sessShow=false}
 // Verwerfen: früher gespeicherter Eintrag → Stand vom Weitermachen; in dieser Sitzung neu angelegt → Eintrag entfernen
 function discardSession(){
   stopTimer(); const s=S.session; if(!s)return; const d=ensureDay(s.date); const i=findEntry(s.date,s.block);
@@ -1332,7 +1381,7 @@ function sortable(list,onMove){
 let NEX_MORE=false;
 // Durchführung auf der Übungskarte: welche Tagesliste offen ist (je Übung 'g' gemacht, 'p' Probleme), nur für diese Sitzung
 let BILMODE={};
-const tagChips=(sel,attr)=>`<div class="chips tagchips">${Object.keys(PRINZIP).map(t=>`<button class="chip sm ${sel.includes(t)?'on':''}" ${attr}="${esc(t)}" aria-pressed="${sel.includes(t)}">${esc(t)}</button>`).join('')}</div>`;
+const tagChips=(sel,attr)=>`<div class="chips tagchips">${pzTags().map(t=>`<button class="chip sm ${sel.includes(t)?'on':''}" ${attr}="${esc(t)}" aria-pressed="${sel.includes(t)}">${esc(t)}</button>`).join('')}</div>`;
 function newExerciseSheet(cb){
   let cat='K',side='beidseitig',u='Wdh',nm='',region='',video='',tags=[],status='testphase';
   const keep=()=>{const i=document.getElementById('nn');if(i)nm=i.value;const r=document.getElementById('nreg');if(r)region=r.value;const v=document.getElementById('nvid');if(v)video=v.value};
@@ -1437,7 +1486,7 @@ function doseSheet(e,after,opts){
 }
 // Neuer Cue an einer Übung (Training und Bibliothekskarte); „stattdessen Prinzip X“ legt den Text als Prinzip-Cue ab (ein Tipp), auch wenn die Liste noch leer ist
 function cueNewSheet(e,dateIso){
-  const tags=e.tags.filter(t=>PRINZIP[t]);
+  const tags=e.tags.filter(pzHas);
   openSheet(`<h3>Neuer Cue</h3><div class="hint">Bezug: ${esc(e.name)}</div><textarea id="cuetxt" placeholder="Was hat die Ausführung verbessert?"></textarea>${tags.length?`<div class="chips">${tags.map(t=>`<button class="chip sm" data-pt="${esc(t)}">stattdessen Prinzip ${esc(t)}</button>`).join('')}</div>`:''}<button class="btn primary wide" id="cuesave">Speichern</button>`);
   const txt=()=>document.getElementById('cuetxt').value.trim();
   try{document.getElementById('cuetxt').focus({preventScroll:true})}catch(e){}
@@ -1555,6 +1604,36 @@ function blockSheet(id,after){
 }
 const sideLbl=sd=>sd==='L'?' · nur links':sd==='R'?' · nur rechts':sd==='beide'?' · L/R':'';
 const dfmt=k=>fmt(new Date(k+'T12:00:00'));
+// Notizen zur Übung, eine Art (Entscheidung 02.10.2026): auf der Karte geschrieben (S.exNotes, i = Index) oder im Training
+// (Notiz in der Einheit, S.days[k].done[ai].ex[ii].note); gemeinsam neueste oben. ref verweist auf die Stelle (noteRef).
+// skip: Eintrag der laufenden Einheit, deren Notiz im Training schon im Eingabefeld steht
+const exNoteList=(id,skip)=>{const ns=(S.exNotes||{})[id]||[];
+  const un=[];Object.keys(S.days).forEach(k=>(S.days[k].done||[]).forEach((a,ai)=>{if(a===skip)return;(a.ex||[]).forEach((i,ii)=>{if(i.id===id&&i.note)un.push({d:k,t:i.note,ref:`d:${k}:${ai}:${ii}`})})}));
+  return [...ns.map((n,i)=>({d:n.d,t:n.t,i,ref:`n:${id}:${i}`})),...un].sort((a,b)=>b.d.localeCompare(a.d)||(a.i==null)-(b.i==null)||(b.i??0)-(a.i??0))};
+// Notizliste (Karte und Training): Datum und Text, Tipp öffnet Ändern/Löschen; ab NOTE_MAX Notizen eigener Scrollbereich (notesFit)
+const NOTE_MAX=6;
+const noteListHtml=(all,key)=>`<div class="nlist" data-nlist="${key}">${all.map(o=>`<button class="nl" data-nedit="${o.ref}"><span class="nd">${dfmt(o.d)}</span> ${esc(o.t)}</button>`).join('')}</div>`;
+// Verweis auflösen; eine Notiz der laufenden Einheit wird auch in S.session geändert, sonst schriebe syncSession den alten Stand zurück
+function noteRef(ref){const p=String(ref).split(':');
+  if(p[0]==='n'){const ns=(S.exNotes||{})[p[1]],n=ns&&ns[+p[2]];
+    return n?{id:p[1],d:n.d,t:n.t,set:v=>{n.t=v},del:()=>{ns.splice(+p[2],1);if(!ns.length)delete S.exNotes[p[1]]}}:null}
+  const k=p[1],ai=+p[2],ii=+p[3],a=S.days[k]&&S.days[k].done[ai],it=a&&a.ex&&a.ex[ii]; if(!it||!it.note)return null;
+  const s=S.session,live=s&&s.date===k&&findEntry(k,s.block)===ai&&s.items[ii]&&s.items[ii].id===it.id?s.items[ii]:null;
+  return {id:it.id,d:k,t:it.note,set:v=>{it.note=v;if(live)live.note=v},del:()=>{delete it.note;if(live){delete live.note;live.noteOpen=false}}};
+}
+function noteEditSheet(ref){const r=noteRef(ref); if(!r)return; const e=exById(r.id);
+  openSheet(`<h3>Notiz vom ${dfmt(r.d)}</h3><div class="hint">Bezug: ${esc(e?e.name:'')}</div><textarea id="exnt">${esc(r.t)}</textarea><div class="row"><button class="btn primary" id="exns">Speichern</button><button class="btn danger" id="exnd">Löschen</button></div>`);
+  document.getElementById('exns').onclick=()=>{const v=document.getElementById('exnt').value.trim();if(v&&v!==r.t){r.set(v);toast('Notiz gespeichert')}closeSheet();render()};
+  document.getElementById('exnd').onclick=()=>{r.del();closeSheet();toast('Notiz gelöscht');render()};
+}
+// Notiz hinzufügen, auf der Karte und im Training gleich: „+“ im Kopf „Notizen“ öffnet direkt darunter ein Feld mit „✓“ (das „+“ ist dann weg).
+// Gespeichert wird bei jeder Eingabe; „✓“ oder die Eingabetaste schließt das Feld (Toast), die Notiz steht dann oben in der Liste.
+const notePlus=(key,lbl)=>`<button class="nplus" data-nadd="${key}" aria-label="${lbl||'Notiz hinzufügen'}">+</button>`;
+const noteInput=(key,val,ph,attr)=>`<div class="nadd"><input type="text" data-ninput="${key}" ${attr||''} enterkeyhint="done" autocomplete="off" placeholder="${ph}" value="${esc(val||'')}"><button class="nok" data-nok="${key}" aria-label="Notiz fertig">✓</button></div>`;
+function noteFocus(key){const i=document.querySelector(`[data-ninput="${key}"]`);if(!i)return;try{i.focus()}catch(e){}const n=i.value.length;try{i.setSelectionRange(n,n)}catch(e){}}
+// Karte: offenes Feld je Übung; n ist die beim Schreiben angelegte Notiz in S.exNotes (steht bis „✓“ nur im Feld, nicht in der Liste)
+let BIB_NOTE=null;
+function bibNoteDone(){const B=BIB_NOTE;BIB_NOTE=null;if(B&&B.n){B.n.t=B.n.t.trim();save()}const a=document.activeElement;if(a&&a.blur)a.blur();render();if(B&&B.n)toast('Notiz gespeichert')}
 const daysBetween=(a,b)=>Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/86400000);
 
 // ---------- Bibliothek ----------
@@ -1583,15 +1662,19 @@ function rBib(){
     return `<div class="exdone"><span class="ftl">${m==='p'?'Probleme am':'gemacht am'}${all.length>ks.length?' · die letzten '+ks.length:''}</span><div class="chips">${ks.map(k=>`<button class="chip sm" data-exday="${k}">${dfmt(k)}</button>`).join('')}</div></div>`};
   const bilKachel=(e,m,n,l)=>{const an=BILMODE[e.id]===m, leer=!bilTage(e,m).length;return `<button class="bil" data-bil="${e.id}:${m}" aria-pressed="${an&&!leer}"${leer?' disabled':''}><b>${n}</b><small>${l}</small></button>`};
   // datierte Notizen je Übung (S.exNotes) und Kurznotizen aus Einheiten, gemeinsam neueste oben; Tipp auf eine eigene Notiz öffnet Bearbeiten/Löschen, Kurznotizen nur Anzeige
-  const notesRow=e=>{const ns=(S.exNotes||{})[e.id]||[];
-    const un=[];Object.keys(S.days).forEach(k=>(S.days[k].done||[]).forEach(a=>(a.ex||[]).forEach(i=>{if(i.id===e.id&&i.note)un.push({d:k,t:i.note})})));
-    const all=[...ns.map((n,i)=>({d:n.d,t:n.t,i})),...un].sort((a,b)=>b.d.localeCompare(a.d)||(a.i==null)-(b.i==null)||(b.i??0)-(a.i??0));
-    return `<div class="nrow exsec"><span class="ftl">Notizen</span>${all.length?`<div class="rts">${all.map(o=>o.i!=null?`<button class="nl" data-exnote="${e.id}:${o.i}"><span class="nd">${dfmt(o.d)} ·</span> ${esc(o.t)}</button>`:`<div class="nl"><span class="nd">${dfmt(o.d)} ·</span> ${esc(o.t)} <span class="badge">Einheit</span></div>`).join('')}</div>`:''}`
-      +`<div class="chips"><button class="chip sm" data-addnote="${e.id}">+ Notiz</button></div></div>`};
+  const notesRow=e=>{const op=!!BIB_NOTE&&BIB_NOTE.id===e.id, dn=op?BIB_NOTE.n:null, ns=(S.exNotes||{})[e.id]||[];
+    const ohne=dn?`n:${e.id}:${ns.indexOf(dn)}`:null, all=exNoteList(e.id).filter(o=>o.ref!==ohne);
+    return `<div class="nrow exsec"><div class="exsec-h nhead"><span class="ftl">Notizen${all.length>NOTE_MAX?' · '+all.length:''}</span>${op?'':notePlus('bib:'+e.id)}</div>`
+      +(op?noteInput('bib:'+e.id,dn?dn.t:'','Beobachtung, Verdacht, Entscheidung'):'')+(all.length?noteListHtml(all,'bib:'+e.id):'')+`</div>`};
   // „Soll verbessern“: Tests der Übung mit Ziel und letztem Wert, oben auf der Karte; „ändern“ öffnet die Auswahl wie im Plan
   const zielSec=e=>{const ts=exTests(e.id);
     return `<div class="exsec ziel"><div class="exsec-h"><span>Soll verbessern</span><button class="tog" data-exziel="${e.id}">${ts.length?'ändern':'wählen'}</button></div>`
-      +(ts.length?ts.map((t,i)=>{const z=zielOf(t);return `<div class="zrow"><b>${esc(goalName(t))}</b>${i===0&&ts.length>1?' <span class="badge">primär</span>':''}<div class="zw">${z?nw('Ziel '+goalVal(z.test,z.target))+' · ':''}${nw(goalLast(t))}</div></div>`}).join(''):'<div class="zleer">Noch nichts gewählt.</div>')+`</div>`};
+      +(ts.length?ts.map((t,i)=>{const pr=i===0&&ts.length>1?' <span class="badge">primär</span>':'';
+        if(!SEITE_FOLGT.includes(t.side)){const z=zielOf(t);return `<div class="zrow"><b>${esc(goalName(t))}</b>${pr}<div class="zw">${z?nw('Ziel '+goalVal(z.test,z.target))+' · ':''}${nw(goalLast(t))}</div></div>`}
+        // Seite folgt der Ausführung bzw. beide: je ermittelter Seite eine Zeile mit Ziel und zuletzt
+        const ps=planSides(e.id),ss=intentSides(t,ps);
+        return `<div class="zrow"><b>${esc(goalName(t))}</b>${pr}${t.side!=='b'?` <span class="zps">(${planSideLbl(ps)})</span>`:''}`
+          +ss.map(x=>{const k={test:t.test,side:x},z=zielOf(k);return `<div class="zw">${x==='l'?'links':'rechts'}: ${z?nw('Ziel '+goalVal(z.test,z.target))+' · ':''}${nw(goalLast(k))}</div>`}).join('')+`</div>`}).join(''):'<div class="zleer">Noch nichts gewählt.</div>')+`</div>`};
   // zugeklappt: Ziel-Kästchen unter dem Namen (aufgeklappt zeigt der Abschnitt die Einzelheiten, nichts doppelt)
   const zielChips=e=>{const ts=exTests(e.id);return ts.length&&S.openEx!==e.id?`<span class="zchips"><span class="zl">soll verbessern</span>${ts.map(t=>`<span class="zchip">${esc(goalName(t))}</span>`).join('')}</span>`:''};
   // leere Bibliothek (echter Kanal beim Start): nur Hinweis und „+ Neue Übung“, ohne Suche und Filter
@@ -1607,7 +1690,7 @@ function rBib(){
     <div class="exsec"><span class="ftl">Cues</span>
     ${e.cues.length?`<div class="sortlist" data-sortcues="${e.id}">${e.cues.map((c,ci)=>`<div class="sortrow">${e.cues.length>1?DRAGH:''}<button class="cue edit" data-bec="${e.id}:${ci}">${esc(c)}</button></div>`).join('')}</div>`:'<div class="hint">Noch keine eigenen Cues.</div>'}
     <div class="chips"><button class="chip sm" data-addcue="${e.id}">+ Cue</button></div>
-    ${e.tags.map(t=>`<details><summary>${esc(t)} · ${(PRINZIP[t]||[]).length} Prinzip-Cues</summary>${(PRINZIP[t]||[]).map(c=>`<div class="cue p">${esc(c)}</div>`).join('')}</details>`).join('')}</div>
+    ${e.tags.filter(pzHas).map(t=>`<details><summary>${esc(t)} · ${(PRINZIP[t]||[]).length} Prinzip-Cues</summary>${(PRINZIP[t]||[]).map(c=>`<div class="cue p">${esc(c)}</div>`).join('')}</details>`).join('')}</div>
     <div class="exsec"><div class="row"><span class="lbl">Status</span><div class="chips">${['aktiv','testphase','geparkt','verworfen'].map(x=>`<button class="chip sm ${st===x?'on':''}" data-st="${e.id}:${x}">${x}</button>`).join('')}</div></div>
     ${ip?`<button class="btn ghost wide" data-rmplan="${e.id}">Aus dem Plan nehmen</button>`:st!=='verworfen'?`<div class="row" style="flex-wrap:nowrap"><button class="btn ghost" style="flex:1" data-toplan="${e.id}">In den Plan</button>${qBtn('toplan')}</div>${qHint('toplan','Testphase: die Übung bleibt gekennzeichnet, bis du sie auf aktiv setzt. Sie darf im Plan stehen.')}`:''}
     <div class="row" style="justify-content:flex-end"><button class="tog" data-exedit="${e.id}" style="font-size:13px">Bearbeiten</button></div></div>
@@ -1625,14 +1708,16 @@ function rBib(){
   document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{S.openEx=S.openEx===b.dataset.open?null:b.dataset.open;render()});
   document.querySelectorAll('[data-rtday]').forEach(b=>b.onclick=()=>daySheet(b.dataset.rtday));
   document.querySelectorAll('[data-exday]').forEach(b=>b.onclick=()=>daySheet(b.dataset.exday));
-  // Notizen je Übung: neu anlegen mit heutigem Datum, bearbeiten oder löschen
-  document.querySelectorAll('[data-addnote]').forEach(b=>b.onclick=()=>{const e=exById(b.dataset.addnote);
-    openSheet(`<h3>Notiz zu ${esc(e.name)}</h3><textarea id="exnt" placeholder="Beobachtung, Verdacht, Entscheidung"></textarea><button class="btn primary wide" id="exns">Speichern</button>`);
-    document.getElementById('exns').onclick=()=>{const v=document.getElementById('exnt').value.trim();if(v){S.exNotes=S.exNotes||{};(S.exNotes[e.id]=S.exNotes[e.id]||[]).push({d:iso(today),t:v});toast('Notiz gespeichert')}closeSheet();render()}});
-  document.querySelectorAll('[data-exnote]').forEach(b=>b.onclick=()=>{const [id,ni]=b.dataset.exnote.split(':');const e=exById(id);const ns=S.exNotes[id];const n=ns[+ni];
-    openSheet(`<h3>Notiz vom ${dfmt(n.d)}</h3><div class="hint">Bezug: ${esc(e.name)}</div><textarea id="exnt">${esc(n.t)}</textarea><div class="row"><button class="btn primary" id="exns">Speichern</button><button class="btn danger" id="exnd">Löschen</button></div>`);
-    document.getElementById('exns').onclick=()=>{const v=document.getElementById('exnt').value.trim();if(v&&v!==n.t){n.t=v;toast('Notiz gespeichert')}closeSheet();render()};
-    document.getElementById('exnd').onclick=()=>{ns.splice(+ni,1);if(!ns.length)delete S.exNotes[id];closeSheet();toast('Notiz gelöscht');render()}});
+  // Notizen zur Übung: „+“ öffnet das Feld auf der Karte (bibNoteDone); Ändern und Löschen über noteEditSheet (auch im Training)
+  document.querySelectorAll('[data-nadd^="bib:"]').forEach(b=>b.onclick=()=>{const id=b.dataset.nadd.slice(4);if(!(BIB_NOTE&&BIB_NOTE.id===id))BIB_NOTE={id,n:null};render();noteFocus('bib:'+id)});
+  document.querySelectorAll('[data-ninput^="bib:"]').forEach(inp=>{const id=inp.dataset.ninput.slice(4);
+    inp.oninput=()=>{const B=BIB_NOTE;if(!B||B.id!==id)return;const v=inp.value;S.exNotes=S.exNotes||{};const ns=S.exNotes[id]=S.exNotes[id]||[];
+      if(v.trim()){if(!B.n){B.n={d:iso(today),t:v};ns.push(B.n)}else B.n.t=v}
+      else if(B.n){const k=ns.indexOf(B.n);if(k>=0)ns.splice(k,1);if(!ns.length)delete S.exNotes[id];B.n=null}
+      save()};
+    inp.onkeydown=ev=>{if(ev.key==='Enter'){ev.preventDefault();bibNoteDone()}}});
+  document.querySelectorAll('[data-nok^="bib:"]').forEach(b=>{b.onmousedown=ev=>ev.preventDefault();b.onclick=()=>bibNoteDone()});
+  document.querySelectorAll('[data-nedit]').forEach(b=>b.onclick=()=>noteEditSheet(b.dataset.nedit));
   // eigene Cues auf der Karte bearbeiten, löschen und neu anlegen (wie im Training)
   document.querySelectorAll('[data-bec]').forEach(b=>b.onclick=()=>{const [id,ci]=b.dataset.bec.split(':');const e=exById(id);cueEditSheet(e.cues[+ci],v=>{const arr=[...e.cues];if(v==null)arr.splice(+ci,1);else arr[+ci]=v;setCues(e,arr);render()})});
   document.querySelectorAll('[data-addcue]').forEach(b=>b.onclick=()=>cueNewSheet(exById(b.dataset.addcue)));
@@ -1649,7 +1734,7 @@ function openBibSheet(kind,keep){
   const T={plan:'Plan',tests:'Tests',verlauf:'Verlauf'}[kind];
   let html='';
   if(kind==='plan'){
-    const block=b=>`<section class="card"><div class="row between" style="margin-bottom:8px"><button class="blockhead" data-bedit="${b.id}">${esc(b.name)}<span class="pen">ändern</span></button><span class="act ${b.type}">${TYPES[b.type].l}</span></div><div class="list" data-sortblock="${b.id}">${b.items.map(([id,,sd])=>{const e=exById(id);return `<div class="item sortrow">${b.items.length>1?DRAGH:''}<div class="t"><b>${esc(e.name)}${exStatus(e)==='testphase'?' <span class="badge test">Testphase</span>':''}</b><small><button class="dchip" data-pdose="${b.id}:${id}">${doseStr(e.d)}</button>${sideLbl(sd)||(e.side==='getrennt'?' · L/R':'')}</small><button class="goalline${exTests(id).length?'':' none'}" data-extests="${id}">${exTestsLine(e)}</button></div><button class="chip sm" data-swap="${b.id}:${id}">tauschen</button><button class="chip sm" data-rm="${b.id}:${id}">−</button></div>`}).join('')||'<div class="hint">leer</div>'}</div><button class="btn ghost wide" style="margin-top:8px" data-add="${b.id}">+ Übung in Block</button></section>`;
+    const block=b=>`<section class="card"><div class="row between" style="margin-bottom:8px"><button class="blockhead" data-bedit="${b.id}">${esc(b.name)}<span class="pen">ändern</span></button><span class="act ${b.type}">${TYPES[b.type].l}</span></div><div class="list" data-sortblock="${b.id}">${b.items.map(([id,,sd])=>{const e=exById(id);return `<div class="item sortrow">${b.items.length>1?DRAGH:''}<div class="t"><b>${esc(e.name)}${exStatus(e)==='testphase'?' <span class="badge test">Testphase</span>':''}</b><small><button class="dchip" data-pdose="${b.id}:${id}">${doseStr(e.d)}</button>${sideLbl(sd)||(e.side==='getrennt'?' · L/R':'')}</small><button class="goalline${exTests(id).length?'':' none'}" data-extests="${id}">${exTestsLine(e,sd)}</button></div><button class="chip sm" data-swap="${b.id}:${id}">tauschen</button><button class="chip sm" data-rm="${b.id}:${id}">−</button></div>`}).join('')||'<div class="hint">leer</div>'}</div><button class="btn ghost wide" style="margin-top:8px" data-add="${b.id}">+ Übung in Block</button></section>`;
     html=`<section class="card"><div class="row between"><div><h2 style="margin:0">Plan v${cur.v} · seit ${dfmt(cur.from)} · ${daysBetween(cur.from,iso(today))} Tage</h2><small class="hint">${(s=>s.sess?`${s.full} von ${s.sess} Einheit${s.sess===1?'':'en'} vollständig`:'noch keine Einheit')(stats([...Array(Math.max(daysBetween(cur.from,iso(today)),1)).keys()].map(i=>addD(new Date(cur.from+'T12:00:00'),i))))}</small></div><button class="chip sm" id="toVerlauf">Verlauf ›</button></div><div class="lbl" style="margin-top:8px">Ziele</div><div class="list">${P().ziele.map(z=>`<button class="item goal" data-goal="${z.id}"><span class="t">${goalHtml(z)}</span><span class="go">›</span></button>`).join('')||'<div class="hint">Noch kein Ziel.</div>'}</div><button class="btn ghost wide" style="margin-top:6px" id="goalAdd">+ Ziel</button></section>
     <section class="card" id="rasterCard"><div class="row between" style="margin-bottom:10px;flex-wrap:nowrap"><h2 style="margin:0">Wochenraster</h2>${qBtn('raster')}</div><div class="raster">${['Mo','Di','Mi','Do','Fr','Sa','So'].map(w=>`<div class="d ${wd(today)===w?'today':''}" data-w="${w}">${w}${(p.raster[w]||[]).map(t=>{const bb=blockById(t);return bb?`<span class="bsw ${bb.type}" title="${esc(bb.name)}">${esc(shortN(bb.name))}</span>`:`<span class="sw ${t}" title="${TYPES[t]?TYPES[t].l:t}"></span>`}).join('')||'<span class="sw" style="background:transparent"></span>'}</div>`).join('')}</div>
     <div class="legend" style="margin-top:8px"><span><i style="background:var(--k)"></i>Korrektiv</span><span><i style="background:var(--i)"></i>Intensiv</span><span><i style="background:var(--tennis)"></i>Tennis</span><span><i style="background:var(--laufen)"></i>Laufen</span><span><i style="background:var(--pause)"></i>Pause</span></div>
@@ -1738,7 +1823,7 @@ function inboxSheet(){
   const noteIso=l=>{const m=/^(\d{2})\.(\d{2})\.$/.exec(l||'');if(!m)return iso(today);const y=today.getFullYear();const k=`${y}-${m[2]}-${m[1]}`;return k>iso(today)?`${y-1}-${m[2]}-${m[1]}`:k};
   document.querySelectorAll('[data-assign]').forEach(b=>b.onclick=()=>{const n=S.inbox[+b.dataset.assign];
     const done=()=>{const i=S.inbox.indexOf(n);if(i>=0)S.inbox.splice(i,1);toast('Zugeordnet');render();if(S.inbox.length)inboxSheet();else closeSheet()};
-    openSheet(`<h3>Zuordnen</h3><div class="cue">${esc(n.t)}</div><div class="lbl">Übung</div><div class="chips"><button class="chip sm" id="toCue">Cue an Übung ›</button><button class="chip sm" id="toExNote">Notiz zur Übung ›</button></div><div class="lbl">Prinzip-Cue</div><div class="chips">${Object.keys(PRINZIP).map(p=>`<button class="chip sm" data-to="p:${p}">${p}</button>`).join('')}</div><div class="lbl">Oder</div><div class="chips"><button class="chip sm" data-to="r:">Rettungskiste</button><button class="chip sm" data-to="g:">Allgemein</button></div><div class="hint">Allgemein nimmt die Notiz nur aus dieser Liste, im Journal des Tages bleibt sie.</div>`);
+    openSheet(`<h3>Zuordnen</h3><div class="cue">${esc(n.t)}</div><div class="lbl">Übung</div><div class="chips"><button class="chip sm" id="toCue">Cue an Übung ›</button><button class="chip sm" id="toExNote">Notiz zur Übung ›</button></div><div class="lbl">Prinzip-Cue</div><div class="chips">${pzTags().map(p=>`<button class="chip sm" data-to="p:${p}">${p}</button>`).join('')}</div><div class="lbl">Oder</div><div class="chips"><button class="chip sm" data-to="r:">Rettungskiste</button><button class="chip sm" data-to="g:">Allgemein</button></div><div class="hint">Allgemein nimmt die Notiz nur aus dieser Liste, im Journal des Tages bleibt sie.</div>`);
     document.getElementById('toCue').onclick=()=>pickExercise(id=>{const e=exById(id);setCues(e,[...e.cues,n.t]);done()},{test:false,title:'Cue zu welcher Übung?'});
     document.getElementById('toExNote').onclick=()=>pickExercise(id=>{S.exNotes=S.exNotes||{};(S.exNotes[id]=S.exNotes[id]||[]).push({d:noteIso(n.d),t:n.t});done()},{test:false,title:'Notiz zu welcher Übung?'});
     document.querySelectorAll('[data-to]').forEach(c=>c.onclick=()=>{const [k,v]=c.dataset.to.split(':');if(k==='p'){PRINZIP[v].push(n.t);S.prinzip=S.prinzip||{};S.prinzip[v]=PRINZIP[v]}else if(k==='r'){S.rettung=S.rettung||[];S.rettung.push({id:newRettId(),t:n.t,a:'Cue',x:''})}done()})});
@@ -1968,12 +2053,6 @@ function daySheet(k){
 }
 
 // ---------- Notiz, Aktivität, Rettung, Tests ----------
-function noteSheet(){
-  openSheet(`<h3>Notiz</h3><textarea id="nt" placeholder="Was ist dir aufgefallen?"></textarea><div class="hint">Erscheint im Tagesdetail des Kalenders und unter Notizen ohne Bezug in der Bibliothek. Cues legst du direkt an der Übung an.</div><button class="btn primary wide" id="ns">Speichern</button>`);
-  // Fokus ins Textfeld: das Sheet dient nur dem Schreiben (spart einen Tipp)
-  try{document.getElementById('nt').focus({preventScroll:true})}catch(e){}
-  document.getElementById('ns').onclick=()=>{const v=document.getElementById('nt').value.trim();if(!v)return;S.inbox.push({t:v,d:fmt(today)});D().notes.push({k:'Notiz',t:v,b:'Inbox'});closeSheet();toast('Gespeichert');render()};
-}
 function aktSheet(dateIso,preType){
   let type=preType&&TYPES[preType]?preType:'Tennis',dur=type==='Laufen'?60:type==='Kochen'?120:90,int='mittel',more=false; const dk=typeof dateIso==='string'?dateIso:iso(today);
   // ausgeblendete Kalenderzeilen Büro/Kochen: Typen erst über „weitere ▸“
@@ -2021,7 +2100,7 @@ const testOf=n=>TESTS.find(t=>t.n===n);
 const testSingle=n=>!!(testOf(n)||{}).single;
 // Testname kurz: Klammerkürzel („Gestrecktes Beinheben (SLR)“ → „SLR“), sonst der Name
 const testShort=n=>{const m=String(n).match(/\(([^)]+)\)\s*$/);return m?m[1]:n};
-const goalName=z=>testShort(z.test)+(z.side==='l'?' links':z.side==='r'?' rechts':'');
+const goalName=z=>testShort(z.test)+(z.side==='l'?' links':z.side==='r'?' rechts':z.side==='a'?' · Seite der Ausführung':z.side==='g'?' · Gegenseite':z.side==='b'?' · beide Seiten':'');
 // Zahl in der Einheit des Tests; Texte wie „2 cm“ oder „ja“ unverändert
 function goalVal(n,v){if(v==null||v==='')return '–';if(typeof v!=='number')return String(v);const u=(testOf(n)||{}).u||'';const s=v.toLocaleString('de-DE');return u==='cm'?s+' cm':u==='s'?s+' s':/°/.test(u)?s+'°':s}
 function goalLast(z){const v=lastTestVal(z.test,z.side||'l');return v==null?'noch kein Wert':'zuletzt '+goalVal(z.test,v)}
@@ -2029,13 +2108,25 @@ function goalStr(z){return `${goalName(z)} · Ziel ${goalVal(z.test,z.target)} �
 // Abschnitte bleiben beim Umbruch zusammen („zuletzt 5 cm“ nicht zerrissen)
 const nw=t=>`<span style="white-space:nowrap">${esc(t)}</span>`;
 const goalHtml=z=>`<b>${esc(goalName(z))}</b> · ${nw('Ziel '+goalVal(z.test,z.target))} · ${nw(goalLast(z))}`;
-// Absicht der Übung (S.exTests[exId] = [{test, side}], der erste ist primär); Ziel nur, wenn Test und Seite übereinstimmen
+// Absicht der Übung (S.exTests[exId] = [{test, side}], der erste ist primär); Ziel nur, wenn Test und (ermittelte) Seite übereinstimmen
 const exTests=exId=>(S.exTests||{})[exId]||[];
 const zielOf=t=>P().ziele.find(z=>z.test===t.test&&(z.side||'')===(t.side||''))||null;
-function exTestsLine(e){const ts=exTests(e.id);const lb='<span class="gl">soll verbessern:</span> ';
+// Seite der Absicht (Entscheidung 02.10.2026): l/r fest, b beide Seiten, a Seite der Ausführung, g Gegenseite (a und g bei getrennten Übungen).
+// a und g ergeben sich aus der Ausführung: Plan-Position „nur links“/„nur rechts“/„beide Seiten“; ohne bekannte Ausführung beide Seiten.
+const SEITE_FOLGT=['a','g','b'];
+const sdSides=sd=>sd==='L'?['l']:sd==='R'?['r']:['l','r'];
+const planSides=exId=>{const o=new Set();P().blocks.forEach(b=>b.items.forEach(([id,,sd])=>{if(id===exId)sdSides(sd).forEach(x=>o.add(x))}));return ['l','r'].filter(x=>o.has(x))};
+const intentSides=(t,ausf)=>{const s=t.side||'';if(!s)return [''];if(s==='l'||s==='r')return [s];if(s==='b')return ['l','r'];
+  const a=ausf&&ausf.length?ausf:['l','r'];return s==='g'&&a.length===1?[a[0]==='l'?'r':'l']:a};
+// Name mit ermittelter Seite: „SLR rechts“, bei beiden Seiten „SLR L/R“
+const sideName=(test,ss)=>testShort(test)+(ss.length===2?' L/R':ss[0]==='l'?' links':ss[0]==='r'?' rechts':'');
+const planSideLbl=ps=>!ps.length?'nicht im Plan':ps.length===2?'im Plan: beide Seiten':ps[0]==='l'?'im Plan: links':'im Plan: rechts';
+function exTestsLine(e,sd){const ts=exTests(e.id);const lb='<span class="gl">soll verbessern:</span> ';
   if(!ts.length)return lb+'wählen';
-  const t=ts[0],z=zielOf(t);
-  return lb+esc(goalName(t))+(z?' · '+nw('Ziel '+goalVal(z.test,z.target)):'')+' · '+nw(goalLast(t))+ts.slice(1).map(x=>' · '+nw('+ '+goalName(x))).join('')}
+  const t=ts[0],ss=intentSides(t,sdSides(sd));
+  const mehr=ts.slice(1).map(x=>' · '+nw('+ '+sideName(x.test,intentSides(x,sdSides(sd))))).join('');
+  if(ss.length===1){const k={test:t.test,side:ss[0]},z=zielOf(k);return lb+esc(sideName(t.test,ss))+(z?' · '+nw('Ziel '+goalVal(z.test,z.target)):'')+' · '+nw(goalLast(k))+mehr}
+  return lb+esc(testShort(t.test))+ss.map(x=>{const k={test:t.test,side:x},z=zielOf(k);return ' · '+nw((x==='l'?'L ':'R ')+(z?'Ziel '+goalVal(z.test,z.target)+' ':'')+goalLast(k))}).join('')+mehr}
 // Ziel anlegen (z=null) oder ändern; after() zeichnet das Plan-Sheet neu
 function goalSheet(z,after){
   let test=z?z.test:null, side=z?(z.side||'l'):'l', val=z?z.target:null, pick=!z;
@@ -2080,7 +2171,7 @@ function exTestsSheet(e,after){
     const rows=list.map((t,i)=>`<div class="item goal"><div class="t"><b>${esc(goalName(t))}</b>${i===0?' <span class="badge">primär</span>':''}</div>${i>0?`<button class="chip sm" data-xtup="${i}" aria-label="${esc(goalName(t))} primär machen">↑</button>`:''}<button class="chip sm" data-xtrm="${i}" aria-label="${esc(goalName(t))} entfernen">−</button></div>`).join('')||'<div class="hint">Noch kein Test gewählt.</div>';
     const tl=`<div class="list">${TESTS.map((t,i)=>`<button class="item" style="width:100%;text-align:left" data-xt="${i}"><div class="t"><b>${t.n}</b><small>${t.u}</small></div><span class="badge">${t.g}</span></button>`).join('')}</div>`;
     openSheet(`<h3>Soll verbessern · ${esc(e.name)}</h3><div class="list">${rows}</div>
-    ${test?`<div class="row between"><span class="lbl">Seite · ${esc(testShort(test))}</span><div class="chips">${[['l','links'],['r','rechts']].map(([k,l])=>`<button class="chip sm" data-xs="${k}">${l}</button>`).join('')}</div></div>`
+    ${test?`<div class="row between"><span class="lbl">Seite · ${esc(testShort(test))}</span><div class="chips">${(e.side==='getrennt'?[['a','Seite der Ausführung'],['g','Gegenseite']]:[['l','links'],['r','rechts'],['b','beide']]).map(([k,l])=>`<button class="chip sm" data-xs="${k}">${l}</button>`).join('')}</div></div>`
       :pick?`<div class="lbl">Test</div>${tl}`:'<button class="btn ghost wide" id="xtAdd">+ Test</button>'}
     <button class="btn primary wide" id="xtSave">Übernehmen</button>`);
     const add=t=>{if(list.some(x=>x.test===t.test&&x.side===t.side))toast('Schon gewählt');else list.push(t);pick=false;test=null;draw()};
@@ -2165,24 +2256,80 @@ function rtStart(it,after){
 }
 function rtAfter(it,after){const t=testOf(it.rt.test);if(!t)return;
   measureSheet(t,{title:'Nachher · '+testShort(t.n),hint:'Vorbelegt mit dem Wert von vorher.',initial:it.rt.vor,cb:val=>{it.rt.nach=val;closeSheet();after()}})}
-// Rettungskiste: Einträge in S.rettung ({id,t,a,x}); „hat geholfen“ merkt die id im Tag (d.helped) und schreibt ins Journal
+// Rettungskiste: Einträge in S.rettung ({id,t,a,x}); „hat geholfen“ merkt die id im Tag (d.helped) und schreibt ins Journal.
+// Merksatz (a:'Merksatz'): nur der Satz in t, Datum d (ISO) beim Anlegen; oben als eigene Gruppe, hervorgehoben, neueste zuerst
 const newRettId=()=>{let n=Date.now();while((S.rettung||[]).some(r=>r.id==='r'+n))n++;return 'r'+n};
+const RETT_ARTEN=['Übung','Cue','Notiz','Merksatz'];
+const merkDatum=k=>{const d=new Date(k+'T12:00:00');return isNaN(d)?'':fmt(d)+d.getFullYear()};
+function addMerksatz(t){S.rettung=S.rettung||[];S.rettung.push({id:newRettId(),t,a:'Merksatz',x:'',d:iso(today)});D().notes.push({k:'Merksatz',t,b:'Rettungskiste'});save()}
+// Formular mit Titel (input), Text (textarea) und Merksatz (textarea): bei Art Merksatz nur das Merksatz-Feld; beim Wechsel wandert vorhandener Text mit
+function rettArtFelder(chips,ti,tx,tm){
+  const set=a=>{const m=a==='Merksatz',T=document.getElementById(ti),X=document.getElementById(tx),M=document.getElementById(tm);
+    if(m&&!M.value.trim())M.value=[T.value.trim(),X.value.trim()].filter(Boolean).join('\n');
+    if(!m&&!T.value.trim()&&M.value.trim())T.value=M.value.trim();
+    T.style.display=X.style.display=m?'none':'';M.style.display=m?'':'none'};
+  document.querySelectorAll(`#${chips} .chip`).forEach(c=>c.onclick=()=>{document.querySelectorAll(`#${chips} .chip`).forEach(x=>x.classList.remove('on'));c.classList.add('on');set(c.dataset.a)});
+  const on=document.querySelector(`#${chips} .chip.on`); if(on)set(on.dataset.a);
+}
+// Prinzip-Cues zentral in der Rettungskiste (Wunsch 02.10.2026): je Prinzip-Tag eingeklappt (offene merkt RETT_PZ für die Sitzung);
+// „+“ öffnet ein Feld mit „✓“ (speichert bei jeder Eingabe), Tipp auf einen Cue ändert oder löscht ihn (cueEditSheet)
+const RETT_PZ=new Set();
+const savePrinzip=t=>{S.prinzip=S.prinzip||{};S.prinzip[t]=PRINZIP[t];save()};
+function rettKeep(){const st=sheet.scrollTop;rettSheet();sheet.scrollTop=st}
+function rettPzHtml(){return pzTags().map(t=>{const cs=PRINZIP[t]||[];
+  return `<details class="pzt" data-pzt="${esc(t)}"${RETT_PZ.has(t)?' open':''}><summary>${esc(t)} <span class="pzn">· ${cs.length}</span></summary>`
+    +`<div class="pzl">${cs.map((c,ci)=>`<button class="pzc" data-pzc="${esc(t)}:${ci}">${esc(c)}</button>`).join('')}</div>`
+    +`<div class="pzadd">${notePlus('pz:'+t,'Prinzip-Cue zu '+esc(t)+' hinzufügen')}<button class="tog danger pzdel" data-pzdel="${esc(t)}">Prinzip löschen</button></div></details>`}).join('')||'<div class="hint">Noch kein Prinzip. Lege mit „+“ eins an.</div>'}
 function rettSheet(){
   const d=D(); const R=S.rettung=S.rettung||[]; const hp=id=>(d.helped||[]).includes(id);
-  openSheet(`<h3>Rettungskiste</h3><div class="hint">Was an schlechten Tagen geholfen hat. Kein Übungsbezug nötig. Tipp auf einen Eintrag ändert ihn.</div><div class="list" id="rettList">${R.map(r=>`<div class="item"><span class="badge">${esc(r.a)}</span><button class="t" style="text-align:left" data-redit="${esc(r.id)}"><b>${esc(r.t)}</b><small>${esc(r.x||'')}</small>${hp(r.id)?'<small style="color:var(--accent)">✓ heute geholfen</small>':''}</button><button class="chip sm" data-h="${esc(r.id)}">hat geholfen</button></div>`).join('')||'<div class="hint" id="rettEmpty">Noch kein Eintrag. Lege unten an, was an schlechten Tagen hilft.</div>'}</div>
-  <div class="lbl">Neuer Eintrag</div><input type="text" id="rt" placeholder="Titel"><div class="chips" id="ra">${['Übung','Cue','Notiz'].map((a,j)=>`<button class="chip sm ${j===1?'on':''}" data-a="${a}">${a}</button>`).join('')}</div><textarea id="rx" placeholder="Was genau hilft?"></textarea><button class="btn ghost wide" id="rs">Eintrag speichern</button>`);
+  const M=R.filter(r=>r.a==='Merksatz').sort((a,b)=>(b.d||'').localeCompare(a.d||'')), E=R.filter(r=>r.a!=='Merksatz');
+  const merk=M.map(r=>`<div class="merk"><button class="mt" data-redit="${esc(r.id)}">${esc(r.t)}</button><div class="mf"><span class="md">${r.d?merkDatum(r.d):''}${hp(r.id)?' · <span style="color:var(--accent)">✓ heute geholfen</span>':''}</span><button class="chip sm" data-h="${esc(r.id)}">hat geholfen</button></div></div>`).join('');
+  const list=E.map(r=>`<div class="item"><span class="badge">${esc(r.a)}</span><button class="t" style="text-align:left" data-redit="${esc(r.id)}"><b>${esc(r.t)}</b><small>${esc(r.x||'')}</small>${hp(r.id)?'<small style="color:var(--accent)">✓ heute geholfen</small>':''}</button><button class="chip sm" data-h="${esc(r.id)}">hat geholfen</button></div>`).join('');
+  openSheet(`<h3>Rettungskiste</h3><div class="hint">Was an schlechten Tagen geholfen hat. Kein Übungsbezug nötig. Tipp auf einen Eintrag ändert ihn.</div>${M.length?`<div class="lbl">Merksätze</div><div id="merkList">${merk}</div>`:''}<div class="lbl nhead" id="pzHead"><span>Prinzipien</span>${notePlus('pzneu','Prinzip anlegen')}</div><div id="pzNeu"></div><div id="pzList">${rettPzHtml()}</div>${E.length?'<div class="lbl">Weitere Einträge</div>':''}${E.length||!M.length?`<div class="list" id="rettList">${list||'<div class="hint" id="rettEmpty">Noch kein Eintrag. Lege unten an, was an schlechten Tagen hilft.</div>'}</div>`:''}
+  <div class="lbl">Neuer Eintrag</div><input type="text" id="rt" placeholder="Titel"><div class="chips" id="ra">${RETT_ARTEN.map((a,j)=>`<button class="chip sm ${j===1?'on':''}" data-a="${a}">${a}</button>`).join('')}</div><textarea id="rm" placeholder="Merksatz"></textarea><textarea id="rx" placeholder="Was genau hilft?"></textarea><button class="btn ghost wide" id="rs">Eintrag speichern</button>`);
   document.querySelectorAll('#sheet [data-h]').forEach(b=>b.onclick=()=>{const id=b.dataset.h;const r=R.find(x=>x.id===id);if(!r)return;d.helped=(d.helped||[]).filter(x=>typeof x==='string');if(!d.helped.includes(id)){d.helped.push(id);d.notes.push({k:'Rettung',t:r.t+' hat geholfen',b:'Rettungskiste'})}save();toast('Im Tag notiert');rettSheet()});
   document.querySelectorAll('#sheet [data-redit]').forEach(b=>b.onclick=()=>rettEditSheet(b.dataset.redit));
-  document.querySelectorAll('#ra .chip').forEach(c=>c.onclick=()=>{document.querySelectorAll('#ra .chip').forEach(x=>x.classList.remove('on'));c.classList.add('on')});
-  document.getElementById('rs').onclick=()=>{const t=document.getElementById('rt').value.trim();if(!t){toast('Titel fehlt');return}R.push({id:newRettId(),t,a:document.querySelector('#ra .chip.on').dataset.a,x:document.getElementById('rx').value.trim()});save();toast('Eintrag gespeichert');rettSheet()};
+  rettArtFelder('ra','rt','rx','rm');
+  document.querySelectorAll('#pzList details').forEach(dt=>dt.ontoggle=()=>{const t=dt.dataset.pzt;if(dt.open)RETT_PZ.add(t);else RETT_PZ.delete(t)});
+  document.querySelectorAll('#pzList [data-pzc]').forEach(b=>b.onclick=()=>{const i=b.dataset.pzc.lastIndexOf(':'),t=b.dataset.pzc.slice(0,i),ci=+b.dataset.pzc.slice(i+1);
+    cueEditSheet(PRINZIP[t][ci],v=>{if(v==null)PRINZIP[t].splice(ci,1);else{PRINZIP[t][ci]=v;toast('Prinzip-Cue gespeichert')}savePrinzip(t);rettSheet()},'Prinzip '+t)});
+  // neues Prinzip: „+“ neben „Prinzipien“ öffnet ein Feld für den Namen; angelegt wird mit „✓“ oder Eingabetaste
+  const pn=document.querySelector('#pzHead [data-nadd]'); if(pn)pn.onclick=()=>{pn.hidden=true;const w=document.getElementById('pzNeu');
+    w.innerHTML=noteInput('pzneu','','Neues Prinzip, z. B. Kopfposition','maxlength="40"');const inp=w.querySelector('input'),ok=w.querySelector('.nok');
+    const fertig=()=>{const n=inp.value.trim().replace(/\s+/g,' ');inp.blur();
+      if(n&&pzTags().some(x=>x.toLowerCase()===n.toLowerCase())){toast('Prinzip „'+n+'“ gibt es schon');rettKeep();return}
+      if(n){S.prinzipTags=[...pzTags(),n];PRINZIP[n]=[];RETT_PZ.add(n);savePrinzip(n)}
+      rettKeep();if(n)toast('Prinzip angelegt')};
+    inp.onkeydown=ev=>{if(ev.key==='Enter'){ev.preventDefault();fertig()}}; ok.onmousedown=ev=>ev.preventDefault(); ok.onclick=fertig; noteFocus('pzneu')};
+  // Prinzip löschen: echte Entscheidung (Cues gehen verloren), Rückfrage; Abbrechen führt zurück in die Rettungskiste
+  document.querySelectorAll('#pzList [data-pzdel]').forEach(b=>b.onclick=()=>{const t=b.dataset.pzdel,n=(PRINZIP[t]||[]).length,m=EX.filter(e=>e.tags.includes(t)).length;
+    confirmSheet(`Prinzip „${esc(t)}“ löschen?`,()=>{S.prinzipTags=pzTags().filter(x=>x!==t);PRINZIP[t]=[];RETT_PZ.delete(t);savePrinzip(t);toast('Prinzip gelöscht');rettSheet()},'Löschen',
+      `<div class="hint">${n?`${n} Prinzip-Cue${n===1?'':'s'} ${n===1?'wird':'werden'} mitgelöscht. `:''}${m?`Bei ${m} Übung${m===1?'':'en'} fällt das Prinzip weg.`:''}</div>`);
+    document.getElementById('cn').onclick=()=>rettSheet()});
+  // „+“: Feld an Ort und Stelle (ohne Neuzeichnen, die Position im Sheet bleibt); der Cue entsteht beim ersten Buchstaben
+  document.querySelectorAll('#pzList [data-nadd]').forEach(b=>b.onclick=()=>{const t=b.dataset.nadd.slice(3),wrap=b.parentElement;let idx=null;
+    wrap.innerHTML=noteInput('pz:'+t,'','Neuer Prinzip-Cue'); const inp=wrap.querySelector('input'), ok=wrap.querySelector('.nok');
+    inp.oninput=()=>{const v=inp.value;PRINZIP[t]=PRINZIP[t]||[];
+      if(v.trim()){if(idx==null){PRINZIP[t].push(v);idx=PRINZIP[t].length-1}else PRINZIP[t][idx]=v}
+      else if(idx!=null){PRINZIP[t].splice(idx,1);idx=null}
+      savePrinzip(t)};
+    const fertig=()=>{if(idx!=null){PRINZIP[t][idx]=PRINZIP[t][idx].trim();savePrinzip(t);D().notes.push({k:'Cue',t:PRINZIP[t][idx],b:'Prinzip '+t});save()}inp.blur();rettKeep();if(idx!=null)toast('Prinzip-Cue gespeichert')};
+    inp.onkeydown=ev=>{if(ev.key==='Enter'){ev.preventDefault();fertig()}};
+    ok.onmousedown=ev=>ev.preventDefault(); ok.onclick=fertig;
+    noteFocus('pz:'+t)});
+  document.getElementById('rs').onclick=()=>{const a=document.querySelector('#ra .chip.on').dataset.a;
+    if(a==='Merksatz'){const t=document.getElementById('rm').value.trim();if(!t){toast('Merksatz fehlt');return}addMerksatz(t);toast('Merksatz gespeichert');rettSheet();return}
+    const t=document.getElementById('rt').value.trim();if(!t){toast('Titel fehlt');return}R.push({id:newRettId(),t,a,x:document.getElementById('rx').value.trim()});save();toast('Eintrag gespeichert');rettSheet()};
 }
 function rettEditSheet(id){
-  const r=(S.rettung||[]).find(x=>x.id===id); if(!r)return;
-  openSheet(`<h3>Eintrag ändern</h3><input type="text" id="ret" placeholder="Titel" value="${esc(r.t)}"><div class="chips" id="rea">${['Übung','Cue','Notiz'].map(a=>`<button class="chip sm ${r.a===a?'on':''}" data-a="${a}">${a}</button>`).join('')}</div><textarea id="rex" placeholder="Was genau hilft?">${esc(r.x||'')}</textarea>
+  const r=(S.rettung||[]).find(x=>x.id===id); if(!r)return; const m0=r.a==='Merksatz';
+  openSheet(`<h3>Eintrag ändern</h3><input type="text" id="ret" placeholder="Titel" value="${m0?'':esc(r.t)}"><div class="chips" id="rea">${RETT_ARTEN.map(a=>`<button class="chip sm ${r.a===a?'on':''}" data-a="${a}">${a}</button>`).join('')}</div><textarea id="rem" placeholder="Merksatz">${m0?esc(r.t):''}</textarea><textarea id="rex" placeholder="Was genau hilft?">${esc(r.x||'')}</textarea>${m0&&r.d?`<div class="hint">Angelegt am ${merkDatum(r.d)}</div>`:''}
     <div class="row"><button class="btn primary" style="flex:1" id="reSave">Speichern</button><button class="btn danger" id="reDel">Löschen</button></div>`);
-  document.querySelectorAll('#rea .chip').forEach(c=>c.onclick=()=>{document.querySelectorAll('#rea .chip').forEach(x=>x.classList.remove('on'));c.classList.add('on')});
-  document.getElementById('reSave').onclick=()=>{const t=document.getElementById('ret').value.trim();if(!t){toast('Titel fehlt');return}
-    const on=document.querySelector('#rea .chip.on');r.t=t;r.a=on?on.dataset.a:r.a;r.x=document.getElementById('rex').value.trim();save();toast('Eintrag gespeichert');rettSheet()};
+  rettArtFelder('rea','ret','rex','rem');
+  document.getElementById('reSave').onclick=()=>{const on=document.querySelector('#rea .chip.on');const a=on?on.dataset.a:r.a;
+    if(a==='Merksatz'){const t=document.getElementById('rem').value.trim();if(!t){toast('Merksatz fehlt');return}r.t=t;r.a=a;r.x='';if(!r.d)r.d=iso(today);save();toast('Eintrag gespeichert');rettSheet();return}
+    const t=document.getElementById('ret').value.trim();if(!t){toast('Titel fehlt');return}
+    r.t=t;r.a=a;r.x=document.getElementById('rex').value.trim();save();toast('Eintrag gespeichert');rettSheet()};
   document.getElementById('reDel').onclick=()=>confirmSheet('Eintrag „'+esc(r.t)+'“ löschen?',()=>{S.rettung=S.rettung.filter(x=>x!==r);save();toast('Eintrag gelöscht');rettSheet()},'Löschen','<div class="hint">Frühere Journal-Einträge „hat geholfen“ bleiben erhalten.</div>');
 }
 
@@ -2236,7 +2383,7 @@ function pruefeUebungen(obj){
       if(d.kg!=null&&(typeof d.kg!=='number'||!isFinite(d.kg)||d.kg<=0||d.kg>500))f('kg muss eine Zahl über 0 sein oder fehlen');
     }
     if(u.region!=null&&!txt(u.region))f('Region muss ein Text sein');
-    if(u.prinzipTags!=null&&(!Array.isArray(u.prinzipTags)||u.prinzipTags.some(t=>!PRINZIP_TAGS.includes(t))))f('Prinzip-Tags nur aus: '+PRINZIP_TAGS.join(', '));
+    if(u.prinzipTags!=null&&(!Array.isArray(u.prinzipTags)||u.prinzipTags.some(t=>!pzHas(t))))f('Prinzip-Tags nur aus: '+pzTags().join(', '));
     if(u.video!=null&&!txt(u.video))f('Video muss ein Text sein');
     if(u.status!=null&&!['testphase','aktiv'].includes(u.status))f('Status muss „testphase“ oder „aktiv“ sein');
     if(u.cues!=null&&(!Array.isArray(u.cues)||u.cues.some(c=>!txt(c)||!c.trim())))f('Cues müssen eine Liste nicht leerer Texte sein');
