@@ -188,6 +188,9 @@
   .kv.big{font-size:14px}
   table.matrix tr.sep td{border-top:2px solid var(--line)}
   table.matrix.tests th:first-child,table.matrix.tests td:first-child{min-width:120px;max-width:140px;white-space:normal;line-height:1.25}
+  /* 1.0.24: Testname tippbar (öffnet den Test), gepunktet unterstrichen wie die Übungen unter „Retests“ */
+  table.matrix.tests .tname{font:inherit;color:inherit;text-align:left;text-decoration:underline dotted;text-underline-offset:3px;position:relative}
+  table.matrix.tests .tname::after{content:'';position:absolute;inset:-8px -4px}
   table.matrix th:first-child,table.matrix td:first-child{position:sticky;left:0;background:var(--surface);text-align:left;font-family:Manrope,sans-serif;font-size:11px;font-weight:700;color:var(--ink2);padding-left:8px;z-index:1;min-width:86px;max-width:86px;overflow:hidden;text-overflow:ellipsis}
   table.matrix thead th{font-family:Manrope,sans-serif;font-size:11px;color:var(--ink2);background:var(--surface2)}
   table.matrix th.today{color:var(--accent);background:var(--accent-soft)}
@@ -366,6 +369,8 @@
   .zrow .zw{font-size:12px;color:var(--ink2)}
   .zleer{font-size:13px;color:var(--ink2)}
   /* zugeklappte Karte: Ziel-Kästchen unter dem Namen */
+  select.posf{width:auto;max-width:100%}
+  .ex .name small.posinfo{margin-top:2px;font-size:11.5px;color:var(--ink3)}
   .zchips{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-top:5px}
   .zchips .zl{font-size:11px;color:var(--ink2);margin-right:2px}
   .zchip{font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--accent-soft);color:var(--accent);white-space:nowrap}
@@ -552,12 +557,56 @@
 // /test/ (lokal, app/test/) oder ?kanal=test
 const KANAL = (window.MFLOG_KANAL) || (/\/(mf-)?test\//.test(location.pathname) || /[?&]kanal=test\b/.test(location.search) ? 'test' : 'app');
 const TEST = KANAL==='test';
-const APP_VERSION='1.0.20';
+const APP_VERSION='1.0.25';
 const STORE_KEY = TEST?'mflog-test-v1':'mflog-v1';
 const APP_NAME = TEST?'MF-Log Test':'MF-Log';
 document.title = APP_NAME;
 {const bn=document.getElementById('kanalBanner');if(bn){bn.textContent='Test · Beispieldaten';bn.hidden=!TEST}
  const tc=document.querySelector('meta[name="theme-color"]');if(tc&&TEST)tc.content='#C8641E'}
+
+// ---------- Android-Hülle (Brücke window.MFNative, Vertrag in docs/HUELLE.md 3.1) ----------
+// Ohne Brücke (Browser, installierte PWA) bleibt alles wie bisher. Jede Methode antwortet sofort mit einem JSON-String {ok, error?, data?}.
+// Fehlende Methode (ältere Hülle), Ausnahme, unlesbare Antwort oder keine sofortige Antwort binnen 5 s ergeben {ok:false}.
+// Methoden mit spätem Ergebnis (saveFile ab H1, health ab H3) bekommen einen Token; das Ergebnis kommt über window.MFNativeCb(token, json).
+const NATIVE=typeof window.MFNative!=='undefined'?window.MFNative:null;
+const NATIVE_MS=5000;
+const nativeHas=m=>{try{return !!NATIVE&&typeof NATIVE[m]==='function'}catch(x){return false}};
+function nativeAntwort(r){
+  if(typeof r==='string'){try{r=JSON.parse(r)}catch(x){return {ok:false,error:'Antwort nicht lesbar'}}}
+  return r&&typeof r==='object'&&typeof r.ok==='boolean'?r:{ok:false,error:'Antwort ungültig'}}
+// Liefert immer ein Promise mit {ok, error?, data?}; wirft nie. Aufruf als Methode von NATIVE (die Java-Brücke braucht das Objekt als this).
+function nativeCall(m,...args){
+  const nein=e=>{try{console.warn('MFNative.'+m+': '+e)}catch(x){}return {ok:false,error:e}};
+  if(!nativeHas(m))return Promise.resolve(nein('Methode fehlt'));
+  let r; try{r=NATIVE[m](...args)}catch(x){return Promise.resolve(nein(String(x&&x.message||x)))}
+  const fertig=v=>{const a=nativeAntwort(v);return a.ok?a:nein(a.error||'ok:false')};
+  if(r&&typeof r.then==='function')return new Promise(res=>{const t=setTimeout(()=>res(nein('keine Antwort nach '+NATIVE_MS/1000+' s')),NATIVE_MS);
+    const weg=x=>{clearTimeout(t);res(nein(String(x&&x.message||x)))};
+    try{r.then(v=>{clearTimeout(t);res(fertig(v))},weg)}catch(x){weg(x)}});
+  return Promise.resolve(fertig(r));
+}
+// Offene Tokens (gemeinsam für alle Methoden mit Rückruf): Token → Funktion, die genau einmal die Antwort {ok, error?, data?} bekommt.
+// Kein Zeitlimit auf den Rückruf (ein Dialog der Hülle darf lange offen sein). Token nur [A-Za-z0-9_-], höchstens 40 Zeichen.
+const NATIVE_OFFEN=new Map(); let NATIVE_NR=0;
+const nativeToken=art=>(art+'-'+Date.now().toString(36)+'-'+(++NATIVE_NR)).replace(/[^A-Za-z0-9_-]/g,'').slice(-40);
+// Ruft m(...args, token). Sofortiges {ok:false} (oder Ausnahme, fehlende Methode, unlesbar) geht gleich an fertig; sonst wartet der Token auf MFNativeCb.
+function nativeMitRueckruf(m,args,art,fertig){
+  const token=nativeToken(art); NATIVE_OFFEN.set(token,fertig);
+  nativeCall(m,...args,token).then(r=>{if(!r.ok&&NATIVE_OFFEN.get(token)===fertig){NATIVE_OFFEN.delete(token);fertig(r)}});
+  return token;
+}
+// Rückruf der Hülle (nur mit Brücke angelegt): json als Objekt oder String; unbekannte oder schon beantwortete Tokens still mit Warnung ignorieren
+if(NATIVE)window.MFNativeCb=function(token,json){
+  const f=typeof token==='string'?NATIVE_OFFEN.get(token):undefined;
+  if(!f){try{console.warn('MFNativeCb: unbekannter oder schon beantworteter Token '+String(token))}catch(x){}return}
+  NATIVE_OFFEN.delete(token);
+  let a; try{a=nativeAntwort(json)}catch(x){a={ok:false,error:'Antwort nicht lesbar'}}
+  try{f(a)}catch(x){try{console.warn('MFNativeCb: '+(x&&x.message||x))}catch(y){}}
+};
+// Angaben der Hülle aus info() für „Mehr“ ({version, flavor, android}); null = keine Brücke oder keine gültige Antwort
+let HUELLE=null;
+function initNative(){if(!NATIVE)return;nativeCall('info').then(r=>{HUELLE=r.ok&&r.data&&typeof r.data==='object'?r.data:null})}
+const huelleVersion=()=>HUELLE&&HUELLE.version!=null&&String(HUELLE.version).trim()?'Version '+String(HUELLE.version).trim():'Version unbekannt';
 
 // ---------- Stammdaten (beide Kanäle) und Beispieldaten (nur Testkanal) ----------
 // Symptome legt der Nutzer im echten Kanal selbst an (der Code ist öffentlich); der Testkanal hat neutrale Beispiele
@@ -602,34 +651,60 @@ const vidPh=id=>'https://example.com/video/'+id;
 function exSeed(){
   if(!TEST)return [];
   const arr=[
-  {id:'e1',name:'Liegender Läufer',cat:'K',region:'Becken / Hüfte',side:'getrennt',dose:'2 × 8 Atemzüge je Seite',tags:['Atmung','Knie-Vorschub'],status:'aktiv',cues:['Langsam ausatmen, Druck gleichmäßig halten','Fuß stabil, Gewicht mittig','Erst Spannung aufbauen, dann bewegen'],video:'https://youtu.be/aqz-KE-bpKQ'},
-  {id:'e2',name:'Wandstehen',cat:'K',region:'Becken',side:'beidseitig',dose:'3 × 60 s',tags:['Becken-Aufrichtung','Fußposition'],status:'aktiv',cues:['Rücken lang, Kopf neutral','Gewicht auf beide Füße verteilen'],video:'https://vimeo.com/1084537'},
-  {id:'e3',name:'90-90 Hiplift',cat:'K',region:'Becken',side:'beidseitig',dose:'3 × 5 Atemzüge',tags:['Atmung','Knie-Vorschub'],status:'aktiv',cues:['Ruhig atmen, Schultern locker']},
-  {id:'e4',name:'Kniestand',cat:'K',region:'Hüfte',side:'getrennt',dose:'2 × 45 s je Seite',tags:['Becken-Aufrichtung'],status:'testphase',cues:[],video:vidPh('e4'),first:'12.09.'},
-  {id:'e5',name:'Goblet Squat mit Fersenkeil',cat:'I',region:'Ganzkörper',side:'beidseitig',dose:'3 × 8',tags:['Fußposition','Knie-Vorschub'],status:'aktiv',cues:['Knie in Richtung Fußspitze, Rücken gerade'],video:vidPh('e5')},
+  {id:'e1',name:'Liegender Läufer',cat:'K',pos:1,region:'Becken / Hüfte',side:'getrennt',dose:'2 × 8 Atemzüge je Seite',tags:['Atmung','Knie-Vorschub'],status:'aktiv',cues:['Langsam ausatmen, Druck gleichmäßig halten','Fuß stabil, Gewicht mittig','Erst Spannung aufbauen, dann bewegen'],video:'https://youtu.be/aqz-KE-bpKQ'},
+  {id:'e2',name:'Wandstehen',cat:'K',pos:10,region:'Becken',side:'beidseitig',dose:'3 × 60 s',tags:['Becken-Aufrichtung','Fußposition'],status:'aktiv',cues:['Rücken lang, Kopf neutral','Gewicht auf beide Füße verteilen'],video:'https://vimeo.com/1084537'},
+  {id:'e3',name:'90-90 Hiplift',cat:'K',pos:2,region:'Becken',side:'beidseitig',dose:'3 × 5 Atemzüge',tags:['Atmung','Knie-Vorschub'],status:'aktiv',cues:['Ruhig atmen, Schultern locker']},
+  {id:'e4',name:'Kniestand',cat:'K',pos:9,region:'Hüfte',side:'getrennt',dose:'2 × 45 s je Seite',tags:['Becken-Aufrichtung'],status:'testphase',cues:[],video:vidPh('e4'),first:'12.09.'},
+  {id:'e5',name:'Goblet Squat mit Fersenkeil',cat:'I',pos:10,region:'Ganzkörper',side:'beidseitig',dose:'3 × 8',tags:['Fußposition','Knie-Vorschub'],status:'aktiv',cues:['Knie in Richtung Fußspitze, Rücken gerade'],video:vidPh('e5')},
   {id:'e6',name:'Glute Max',cat:'I',region:'Hüfte',side:'getrennt',dose:'3 × 10 je Seite',tags:['Knie-Vorschub'],status:'aktiv',cues:['Langsam und kontrolliert bewegen']},
-  {id:'e7',name:'ISO Squat Hold',cat:'I',region:'Ganzkörper',side:'beidseitig',dose:'2 × 90 s',tags:['Atmung'],status:'aktiv',cues:[]},
+  {id:'e7',name:'ISO Squat Hold',cat:'I',pos:10,region:'Ganzkörper',side:'beidseitig',dose:'2 × 90 s',tags:['Atmung'],status:'aktiv',cues:[]},
   {id:'e8',name:'Ellbow Pullapart',cat:'K',region:'Brustkorb / Nacken',side:'beidseitig',dose:'2 × 12',tags:['Brustkorb-Rotation'],status:'aktiv',cues:['Schultern tief halten']},
   {id:'e9',name:'Camporini Deadlift',cat:'I',region:'Hüfte',side:'getrennt',dose:'3 × 6',tags:[],status:'geparkt',cues:['Hüfte bleibt ruhig, Rücken gerade']},
   {id:'e10',name:'Achsel riechen',cat:'K',region:'Nacken',side:'getrennt',dose:'5 Atemzüge je Seite',tags:['Atmung'],status:'aktiv',cues:[]},
-  {id:'e11',name:'Invertierter Vierfüßler',cat:'K',region:'Brustkorb',side:'beidseitig',dose:'2 × 8',tags:[],status:'verworfen',cues:[]},
+  {id:'e11',name:'Invertierter Vierfüßler',cat:'K',pos:5,region:'Brustkorb',side:'beidseitig',dose:'2 × 8',tags:[],status:'verworfen',cues:[]},
   ];
   const DOSE={e1:{sets:2,n:8,u:'Atemzüge'},e2:{sets:3,n:60,u:'s'},e3:{sets:3,n:5,u:'Atemzüge'},e4:{sets:2,n:45,u:'s'},e5:{sets:3,n:8,u:'Wdh',kg:16},e6:{sets:3,n:10,u:'Wdh'},e7:{sets:2,n:90,u:'s'},e8:{sets:2,n:12,u:'Wdh'},e9:{sets:3,n:6,u:'Wdh',kg:20},e10:{sets:1,n:5,u:'Atemzüge'},e11:{sets:2,n:8,u:'Wdh'}};
   arr.forEach(e=>{e.d=DOSE[e.id]||{sets:1,n:1,u:'Wdh'}});
   return arr;
 }
 const EX = exSeed();
+// Position der Übung (Wunsch 08.10.2026): feste Liste mit Nummer; e.pos = Nummer oder fehlt. info nur auf Tipp in der offenen Karte.
+const POS=[[1,'Rückenlage','supine'],[2,'Hooklying',''],[3,'Seitlage','side lying'],[4,'Bauchlage','prone'],
+  [5,'Vierfüßler','quadruped; inkl. Lazy Bear und, als Umkehrvariante (Hüften über Schultern), Inverted Lazy Bear'],
+  [6,'Niedriger Sitz/Stütz','low oblique sit, auf dem Ellbogen'],[7,'Hoher Sitz/Stütz','high oblique sit, auf der Hand'],
+  [8,'Kniestand beidbeinig','tall kneeling'],[9,'Halber Kniestand','half kneeling; Modifikatoren: hinteres Knie erhöht, front side open, back side open'],
+  [10,'Stand','standing, beidbeinig'],[11,'Ausfallschritt','split stance; Tiefe/Stagger als Modifikator, vom breiten Stagger bis zum tiefen 90/90-Boden'],
+  [12,'Einbeinstand','single-leg; Marsch/Knieheben'],
+  [13,'Dynamisch','integrated: Bewegungen, die durch mehrere Positionen/Phasen laufen (Gehen, Rolling/Get-up, Squat über volle Range, Step-up, Skips, Sprünge, Richtungswechsel)']];
+const posOf=n=>POS.find(x=>x[0]===n)||null;
+const posName=n=>{const x=posOf(n);return x?x[0]+' '+x[1]:''};
+const posOpts=(sel,leer)=>`<option value="">${leer}</option>`+POS.map(([n,l])=>`<option value="${n}"${sel===n?' selected':''}>${n} ${esc(l)}</option>`).join('');
 const doseStr=d=>`${d.sets} × ${d.n} ${d.u}${d.kg!=null?' · '+d.kg.toLocaleString('de-DE')+' kg':''}`;
 const sameDose=(a,b)=>a.sets===b.sets&&a.n===b.n&&(a.kg??null)===(b.kg??null);
 // Ziele als Testwerte (S.plan.ziele): Beispiele nur im Testkanal
 const ZIELE_SEED=()=>TEST?[{id:'z1',test:'Gestrecktes Beinheben (SLR)',side:'l',target:80},{id:'z2',test:'Hüftbeugung',side:'r',target:90}]:[];
-// Test-Katalog (Stammdaten); single = einseitig gemessen (ein Wert)
+// Test-Katalog (Stammdaten); single = einseitig gemessen (ein Wert); a = standardmäßig im Assessment (die 9 Tests der Vorlage, 1.0.24)
 const TESTS = [
-  {g:'Table',n:'Hüftaußenrotation',u:'°'},{g:'Table',n:'Hüftinnenrotation',u:'°'},{g:'Table',n:'Hüftbeugung',u:'° / cm'},{g:'Table',n:'Gestrecktes Beinheben (SLR)',u:'°'},
-  {g:'Table',n:'Schulteraußenrotation',u:'°'},{g:'Table',n:'Schulterinnenrotation',u:'°'},{g:'Table',n:'Schulterflexion',u:'°'},
-  {g:'Bewegung',n:'Kniebeuge',u:'cm',single:true},{g:'Bewegung',n:'Vorbeuge',u:'cm',single:true},
+  {g:'Table',n:'Hüftaußenrotation',u:'°',a:true},{g:'Table',n:'Hüftinnenrotation',u:'°',a:true},{g:'Table',n:'Hüftbeugung',u:'° / cm',a:true},{g:'Table',n:'Gestrecktes Beinheben (SLR)',u:'°',a:true},
+  {g:'Table',n:'Schulteraußenrotation',u:'°',a:true},{g:'Table',n:'Schulterinnenrotation',u:'°',a:true},{g:'Table',n:'Schulterflexion',u:'°',a:true},
+  {g:'Bewegung',n:'Kniebeuge',u:'cm',single:true,a:true},{g:'Bewegung',n:'Vorbeuge',u:'cm',single:true,a:true},
   {g:'Eigene',n:'Wandstehen PSIS-Kontakt',u:'ja/nein',single:true},{g:'Eigene',n:'Goblet Hold 60°',u:'s',single:true},
 ];
+// 1.0.24 (Entscheidung des Nutzers 08.10.2026): Test-Katalog pflegbar, in beiden Kanälen. Aktueller Katalog = fest eingebaute Tests ohne die gelöschten
+// (S.testDeleted, Namen; bleiben auch nach Update und Import weg) plus eigene Tests (S.customTests: {n,u,g,single,a}), nach Gruppen geordnet.
+// „im Assessment“: S.testAssess[Name] (true/false) gilt vor dem Standard a. Der Name ist der Schlüssel in Messwerten (d.tests[].n),
+// Retests (it.rt.test), Zielen (z.test) und Absichten (S.exTests[].test); er ist eindeutig und lässt sich nicht ändern.
+const TEST_EINHEITEN=['°','cm','s','Wdh','ja/nein'];
+const TEST_GRUPPEN=['Table','Bewegung','Eigene'];
+const testKey=n=>String(n||'').trim().toLowerCase();
+function testList(){
+  const del=S&&Array.isArray(S.testDeleted)?S.testDeleted:[], eig=S&&Array.isArray(S.customTests)?S.customTests.filter(t=>t&&typeof t.n==='string'):[];
+  const gi=t=>{const i=TEST_GRUPPEN.indexOf(t.g);return i<0?TEST_GRUPPEN.length:i};
+  return [...TESTS.filter(t=>!del.includes(t.n)),...eig].sort((a,b)=>gi(a)-gi(b));
+}
+const testInAssess=t=>{const m=S&&S.testAssess;return !!t&&(m&&typeof m==='object'&&Object.prototype.hasOwnProperty.call(m,t.n)?!!m[t.n]:!!t.a)};
+// Beispiel-Messwerte (Testkanal) nur für eingebaute Tests, die nicht gelöscht sind
+const testVals=n=>S&&Array.isArray(S.testDeleted)&&S.testDeleted.includes(n)?[]:(TESTVALS[n]||[]);
 // Beispiel-Testwerte (feste Spalten 20.08. und 03.09.) nur im Testkanal
 const TESTVALS = TEST?{'Hüftaußenrotation':[['20.08.',35,40],['03.09.',40,40]],'Hüftinnenrotation':[['20.08.',25,20],['03.09.',30,25]],'Hüftbeugung':[['20.08.','4 cm','6 cm'],['03.09.','2 cm','5 cm']],'Gestrecktes Beinheben (SLR)':[['20.08.',60,70],['03.09.',70,70]],'Schulteraußenrotation':[['20.08.',75,80],['03.09.',80,80]],'Schulterinnenrotation':[['20.08.',50,45],['03.09.',55,50]],'Schulterflexion':[['20.08.',160,165],['03.09.',165,165]],'Kniebeuge':[['20.08.','8 cm','–'],['03.09.','6 cm','–']],'Vorbeuge':[['20.08.','12 cm','–'],['03.09.','9 cm','–']],'Wandstehen PSIS-Kontakt':[['03.09.','nein','–']],'Goblet Hold 60°':[['03.09.','70 s','–']]}:{};
 // Rettungskiste: Einträge in S.rettung ({id,t,a,x}, Merksatz zusätzlich d = Datum ISO); Beispieleinträge nur im Testkanal
@@ -751,6 +826,13 @@ function hydrate(obj){
   if(!S.exTests||typeof S.exTests!=='object')S.exTests={};
   if(S.exGoal&&typeof S.exGoal==='object')Object.entries(S.exGoal).forEach(([k,id])=>{const z=S.plan.ziele.find(x=>x.id===id);if(z&&!(S.exTests[k]||[]).length)S.exTests[k]=[{test:z.test,side:z.side||''}]});delete S.exGoal;
   if(!S.exNotes||typeof S.exNotes!=='object')S.exNotes={};
+  // 1.0.24: Test-Katalog. Ältere Stände ohne diese Felder: alle eingebauten Tests, keine eigenen, „im Assessment“ wie im Katalog.
+  // Eigene Tests ohne Namen oder mit dem Namen eines vorhandenen Tests fallen weg; fehlende Angaben bekommen den Standard.
+  S.testDeleted=Array.isArray(S.testDeleted)?S.testDeleted.filter(n=>typeof n==='string'):[];
+  if(!S.testAssess||typeof S.testAssess!=='object'||Array.isArray(S.testAssess))S.testAssess={};
+  {const da=new Set(TESTS.filter(t=>!S.testDeleted.includes(t.n)).map(t=>testKey(t.n)));
+   S.customTests=(Array.isArray(S.customTests)?S.customTests:[]).filter(t=>{if(!t||typeof t!=='object'||typeof t.n!=='string'||!t.n.trim()||da.has(testKey(t.n)))return false;
+     da.add(testKey(t.n));if(typeof t.u!=='string')t.u='';if(!TEST_GRUPPEN.includes(t.g))t.g='Eigene';t.single=!!t.single;t.a=!!t.a;return true})}
   // leere Symptomliste ist erlaubt (alle gelöscht); nur ein fehlender Eintrag wird neu belegt
   if(!Array.isArray(S.symptoms))S.symptoms=SYM_SEED.map(s=>Object.assign({},s));
   Object.values(S.days).forEach(dd=>{if(!dd.sy||Array.isArray(dd.sy))dd.sy={};if(!dd.syA||Array.isArray(dd.syA))dd.syA={};if(!Array.isArray(dd.extra))dd.extra=[];['done','abw','notes','tests','chips','planned'].forEach(f=>{if(!Array.isArray(dd[f]))dd[f]=[]});dd.done.forEach(a=>(a.ex||[]).forEach(migR))});
@@ -772,7 +854,9 @@ function freshState(){
     exTests:TEST?{e1:[{test:'Gestrecktes Beinheben (SLR)',side:'l'}],e6:[{test:'Gestrecktes Beinheben (SLR)',side:'l'},{test:'Hüftbeugung',side:'r'}],e2:[{test:'Hüftbeugung',side:'r'}]}:{},
     // datierte Notizen je Übung (nicht die Kurznotiz in der Einheit, nicht das Tagesjournal)
     exNotes:TEST?{e4:[{d:iso(addD(today,-3)),t:'Verdacht: danach Knie außen r schlechter. Nochmal gezielt mit Retest prüfen.'}]}:{},
-    rettung:RETT_SEED()};
+    rettung:RETT_SEED(),
+    // Test-Katalog (1.0.24): eigene Tests, gelöschte eingebaute Tests, „im Assessment“ abweichend vom Standard
+    customTests:[],testDeleted:[],testAssess:{}};
   resetContent(); initPlan(); S.days=TEST?seedDays():{}; fixKalRows(); ensureDay(iso(today));
 }
 // Gespeicherter Stand, der sich nicht lesen lässt, wird nicht überschrieben, sondern unter STORE_KEY+'-defekt' gesichert
@@ -798,13 +882,27 @@ function toast(m){const t=document.getElementById('toast');t.textContent=m;t.cla
 
 // ---------- Sheet ----------
 const sheetbg=document.getElementById('sheetbg'), sheet=document.getElementById('sheet');
-// Zurück-Taste (Android): beim Öffnen höchstens ein Verlaufseintrag {sheet:1}; closeSheet ruft kein history.back() (sonst Schleife),
-// der Eintrag bleibt liegen und wird beim nächsten Öffnen wiederverwendet. popstate ohne offenes Sheet: nichts tun.
-let sheetHist=false;
+// Zurück-Taste (Android, Browser): solange ein Sheet offen ist, gibt es genau einen eigenen Verlaufseintrag {sheet:1}; Untersheets und Sheets,
+// die ein anderes öffnen, nutzen ihn mit (keine Kette). Zurück entfernt ihn selbst (popstate schließt bzw. führt ins Bibliothek-Sheet zurück).
+// 1.0.22 (Fund 2, Entscheidung des Nutzers 07.10.2026): Schließt das Sheet auf anderem Weg (Knopf, Speichern, Wischen, Hintergrund), entfernt die App
+// den Eintrag selbst mit history.back(), damit danach ein Zurück die App verlässt. Das geschieht erst nach dem laufenden Ablauf (setTimeout 0):
+// öffnet derselbe Tipp gleich das nächste Sheet, bleibt der Eintrag. Die Marke SH_ZURUECK sorgt dafür, dass das folgende popstate nichts schließt;
+// wurde inzwischen ein Sheet geöffnet, legt es den Eintrag neu an. Nach einem Neuladen mit offenem Sheet räumt der Start den alten Eintrag ab.
+let SH_ZURUECK=0; // Zeitpunkt des eigenen history.back(), 0 = keins unterwegs
+const shEintrag=()=>{try{return !!(history.state&&history.state.sheet)}catch(e){return false}};
+const shPush=()=>{if(!shEintrag()){try{history.pushState({sheet:1},'')}catch(e){}}};
+function shAufraeumen(){
+  if(SH_ZURUECK||sheetbg.classList.contains('open')||!shEintrag())return;
+  const t=SH_ZURUECK=Date.now();
+  try{history.back()}catch(e){SH_ZURUECK=0;return}
+  // Rückfall, falls kein popstate kommt: Marke nach 1 s lösen; ein inzwischen offenes Sheet bekommt seinen Eintrag
+  setTimeout(()=>{if(SH_ZURUECK===t){SH_ZURUECK=0;if(sheetbg.classList.contains('open'))shPush()}},1000)}
 function openSheet(html,full){delete sheet.dataset.bibk;sheet.innerHTML='<div class="grab" aria-hidden="true"></div>'+html;sheet.classList.toggle('full',!!full);sheet.classList.remove('drag','snap');sheet.style.transform='';sheetbg.classList.add('open');sheet.scrollTop=0;
-  if(!(history.state&&history.state.sheet)){try{history.pushState({sheet:1},'')}catch(e){}}sheetHist=true}
-function closeSheet(){delete sheet.dataset.bibk;delete sheet.dataset.back;sheetbg.classList.remove('open');sheet.classList.remove('full','drag','snap');sheet.style.transform='';sheetHist=false}
-window.addEventListener('popstate',()=>{if(sheetbg.classList.contains('open'))backOrClose()});
+  if(!SH_ZURUECK)shPush()}
+function closeSheet(){delete sheet.dataset.bibk;delete sheet.dataset.back;sheetbg.classList.remove('open');sheet.classList.remove('full','drag','snap');sheet.style.transform='';setTimeout(shAufraeumen,0)}
+window.addEventListener('popstate',()=>{
+  if(SH_ZURUECK){SH_ZURUECK=0;if(sheetbg.classList.contains('open'))shPush();return} // eigenes history.back(): nichts schließen
+  if(sheetbg.classList.contains('open'))backOrClose()});
 // Wischen nach unten schließt (wie Tipp auf den Hintergrund): Start nur bei scrollTop 0, nicht auf Eingabefeldern oder Knöpfen, der Griff zieht immer
 let shDrag=null;
 sheet.addEventListener('pointerdown',ev=>{if(ev.button>0)return;const g=ev.target.closest('.grab');if(!g&&(sheet.scrollTop>0||ev.target.closest('input,textarea,button,select,.matrix-wrap')))return;
@@ -969,7 +1067,7 @@ function rHeute(){
   const tm=document.getElementById('tagMore'); if(tm)tm.onclick=()=>{tagMore=true;render()};
   document.getElementById('openRett').onclick=()=>rettSheet();
   const tp=document.getElementById('toPlan'); if(tp)tp.onclick=()=>{setTab('bib');openBibSheet('plan')};
-  const bk=document.getElementById('bkRow'); if(bk)bk.onclick=()=>{exportData();render()};
+  const bk=document.getElementById('bkRow'); if(bk)bk.onclick=()=>exportData(render);
 }
 
 // ---------- Einzelnen Tag planen (heute oder künftig) ----------
@@ -1089,7 +1187,7 @@ function rTraining(){
         else{st=sessState(ent,tk);ok=!!f&&f.full;btn='Bearbeiten';cl='ghost'}}
       const open=S.trOpen===bid;
       const items=bl?[...bl.items.map(([id,,sd])=>({id,sd,it:ent&&ent.ex?ent.ex.find(x=>x.id===id):null})),...(ent&&ent.ex?ent.ex.filter(x=>x.extra&&!bl.items.some(y=>y[0]===x.id)):[]).map(it=>({id:it.id,it}))]:(ent&&ent.ex?ent.ex:[]).map(it=>({id:it.id,it}));
-      const list=!open?'':items.map(({id,sd,it})=>{const e=exById(id);const sk=it&&it.skip;const mark=it&&it.r&&!sk?'<span style="color:var(--accent);font-weight:700">✓</span>':'';
+      const list=!open?'':items.filter(o=>exById(o.id)).map(({id,sd,it})=>{const e=exById(id);const sk=it&&it.skip;const mark=it&&it.r&&!sk?'<span style="color:var(--accent);font-weight:700">✓</span>':'';
         return `<div class="item" style="padding:6px 0"><div class="t"><b style="font-weight:600${sk?';text-decoration:line-through;color:var(--ink3)':''}">${esc(e.name)}${bl&&it&&it.extra?' <span class="badge">außerplanmäßig</span>':''}${exStatus(e)==='testphase'?' <span class="badge test">Testphase</span>':''}</b><small${sk?' style="color:var(--ink3)"':''}>${it&&setsDone(it).length?esc(setsStr(it,e)):doseStr((it&&it.d)||e.d)}${sideLbl((it&&it.side)||sd)||(e.side==='getrennt'?' · L/R':'')}</small></div>${mark}</div>`}).join('');
       return `<div class="trrow" data-trrow="${esc(bid)}"><button class="trhead" data-trtog="${esc(bid)}" aria-expanded="${open}"><span class="act ${type}">${type}</span><span class="t"><b>${esc(labelOf(bid))}</b><span class="trst${ok?' ok':''}">${st}</span></span><span class="trarr" aria-hidden="true">${open?'▾':'▸'}</span></button>${open?`<div class="trbody"><div class="list">${list||'<div class="hint">Noch keine Übung.</div>'}</div><button class="btn ${cl} wide" data-go="${esc(bid)}">${btn}</button></div>`:''}</div>`};
     // Sportzeile (Tennis, Laufen): erfasste Einträge als Chips (Tipp → ändern/löschen), „Erfassen“ bleibt, mehrere Einträge erlaubt
@@ -1263,9 +1361,12 @@ function timerDone(){
 }
 // früher beendet: tatsächliche Zeit eintragen (re===false: ohne Neuzeichnen, Aufruf aus rTraining bzw. „Fertig“)
 function timerEarly(re){const {it,si,dur}=TIMER;const n=Math.max(1,dur-timerLeft());stopTimer();const e=exById(it.id);if(e)setPut(it,e,si,{n,...(planD(it,e).kg!=null?{kg:planD(it,e).kg}:{})});toast(`Satz ${si+1}: ${n} s`);if(re!==false)render()}
-// Bildschirm an, solange die Einheit offen ist (Wake Lock, wenn der Browser es erlaubt)
-let WAKE=null;
+// Bildschirm an, solange die Einheit offen ist (Wake Lock, wenn der Browser es erlaubt).
+// In der Android-Hülle zusätzlich MFNative.keepAwake(true/false), nur bei Änderung. NATIVE_WAKE = zuletzt gemeldet; null = noch nie,
+// deshalb meldet der erste Aufruf nach dem Laden den Stand auch dann, wenn er false ist (das Fenster der Hülle übersteht ein Neuladen der Seite).
+let WAKE=null, NATIVE_WAKE=null;
 async function wakeSync(){const want=S.tab==='training'&&!!S.session&&!!S.sessShow&&document.visibilityState==='visible';
+  if(NATIVE_WAKE!==want&&nativeHas('keepAwake')){NATIVE_WAKE=want;nativeCall('keepAwake',want)}
   try{if(want&&!WAKE&&navigator.wakeLock){WAKE=await navigator.wakeLock.request('screen');WAKE.addEventListener('release',()=>{WAKE=null})}
     else if(!want&&WAKE){const w=WAKE;WAKE=null;await w.release()}}catch(x){WAKE=null}}
 document.addEventListener('visibilitychange',()=>wakeSync());
@@ -1442,17 +1543,19 @@ function sortable(list,onMove){
 let NEX_MORE=false;
 // Durchführung auf der Übungskarte: welche Tagesliste offen ist (je Übung 'g' gemacht, 'p' Probleme), nur für diese Sitzung
 let BILMODE={};
+let POSINFO=null; // Übung, deren Positions-Erläuterung gerade eingeblendet ist
 const tagChips=(sel,attr)=>`<div class="chips tagchips">${pzTags().map(t=>`<button class="chip sm ${sel.includes(t)?'on':''}" ${attr}="${esc(t)}" aria-pressed="${sel.includes(t)}">${esc(t)}</button>`).join('')}</div>`;
 function newExerciseSheet(cb){
-  let cat='K',side='beidseitig',u='Wdh',nm='',region='',video='',tags=[],status='testphase';
-  const keep=()=>{const i=document.getElementById('nn');if(i)nm=i.value;const r=document.getElementById('nreg');if(r)region=r.value;const v=document.getElementById('nvid');if(v)video=v.value};
+  let cat='K',side='beidseitig',u='Wdh',nm='',region='',video='',tags=[],status='testphase',pos=null;
+  const keep=()=>{const i=document.getElementById('nn');if(i)nm=i.value;const r=document.getElementById('nreg');if(r)region=r.value;const v=document.getElementById('nvid');if(v)video=v.value;const ps=document.getElementById('npos');if(ps)pos=ps.value===''?null:+ps.value};
   const draw=()=>{openSheet(`<h3>Neue Übung</h3><input type="text" id="nn" placeholder="Name" value="${esc(nm)}"><div class="lbl">Kategorie</div><div class="chips">${[['K','Korrektiv'],['I','Intensiv']].map(([k,l])=>`<button class="chip sm ${cat===k?'on':''}" data-c="${k}">${l}</button>`).join('')}</div>
     <div class="lbl">Seite</div><div class="chips">${['beidseitig','getrennt'].map(x=>`<button class="chip sm ${side===x?'on':''}" data-sd="${x}">${x}</button>`).join('')}</div>
     <div class="lbl">Dosierung</div><div class="row"><div class="step"><button data-nx="sets:-1">−</button><span id="ns">${sets} Sätze</span><button data-nx="sets:1">+</button></div><div class="step"><button data-nx="n:-1">−</button><span id="nr">${n} ${u}</span><button data-nx="n:1">+</button></div></div>
     <div class="chips">${['Wdh','s','Atemzüge'].map(x=>`<button class="chip sm ${u===x?'on':''}" data-u="${x}">${x}</button>`).join('')}</div>
     <div class="row between"><span class="lbl">Mit Gewicht</span><button class="chip sm" id="kgt">${kg!=null?kg+' kg':'nein'}</button></div>
-    <button class="tog" id="nmore" aria-expanded="${NEX_MORE}" style="font-size:13px">${NEX_MORE?'mehr ▾':'mehr ▸'} Region, Prinzip-Tags, Video, Status</button>
+    <button class="tog" id="nmore" aria-expanded="${NEX_MORE}" style="font-size:13px">${NEX_MORE?'mehr ▾':'mehr ▸'} Region, Position, Prinzip-Tags, Video, Status</button>
     ${NEX_MORE?`<div class="lbl">Region</div><input type="text" id="nreg" placeholder="z. B. Becken / Hüfte" value="${esc(region)}">
+    <div class="lbl">Position</div><select id="npos">${posOpts(pos,'keine')}</select>
     <div class="lbl">Prinzip-Tags</div>${tagChips(tags,'data-ntag')}
     <div class="lbl">Video-Link</div><input type="url" id="nvid" inputmode="url" placeholder="https://…" value="${esc(video)}">
     <div class="row between"><span class="lbl">Status</span><div class="chips">${['testphase','aktiv'].map(x=>`<button class="chip sm ${status===x?'on':''}" data-nst="${x}">${x}</button>`).join('')}</div></div>`:''}
@@ -1464,57 +1567,99 @@ function newExerciseSheet(cb){
     document.querySelectorAll('#sheet [data-ntag]').forEach(b=>b.onclick=()=>{const t=b.dataset.ntag;tags=tags.includes(t)?tags.filter(x=>x!==t):[...tags,t];b.classList.toggle('on',tags.includes(t));b.setAttribute('aria-pressed',tags.includes(t))});
     document.querySelectorAll('#sheet [data-nst]').forEach(b=>b.onclick=()=>{keep();status=b.dataset.nst;draw()});
     document.getElementById('nsave').onclick=()=>{keep();const name=nm.trim();if(!name){toast('Name fehlt');return}let sq=Date.now();while(EX.some(x=>x.id==='c'+sq)||(S.exDeleted||[]).includes('c'+sq))sq++;const id='c'+sq;
-      const e={id,name,cat,region:region.trim(),side,dose:'',tags:[...tags],status,cues:[],d:{sets,n,u,...(kg!=null?{kg}:{})},first:fmt(today)};const vu=normUrl(video);if(vu)e.video=vu;
+      const e={id,name,cat,region:region.trim(),side,dose:'',tags:[...tags],status,cues:[],d:{sets,n,u,...(kg!=null?{kg}:{})},first:fmt(today)};const vu=normUrl(video);if(vu)e.video=vu;if(pos)e.pos=pos;
       EX.push(e);S.customEx=S.customEx||[];S.customEx.push(e);addEvent(name+': neu angelegt ('+(status==='aktiv'?'aktiv':'Testphase')+')');closeSheet();toast('Übung angelegt');cb(id)};
   }; let sets=2,n=8,kg=null; draw();
   // Name zuerst: Fokus ins Namensfeld beim Öffnen (spart einen Tipp)
   const nn=document.getElementById('nn'); if(nn)try{nn.focus({preventScroll:true})}catch(e){}
 }
 // Wo kommt die Übung vor? Einheiten (auch die laufende), Blöcke, frühere Plan-Versionen
+// 1.0.23: nbl = Anzahl Blöcke, einhN = Einheiten ohne Doppelzählung der laufenden (für die Rückfrage im Testkanal)
 function exUsage(id){
-  let einh=0; Object.values(S.days).forEach(d=>(d.done||[]).forEach(a=>{if((a.ex||[]).some(i=>i.id===id))einh++}));
-  if(S.session&&S.session.items.some(i=>i.id===id))einh++;
-  const bl=P().blocks.some(b=>b.items.some(x=>x[0]===id)), ver=P().versions.some(v=>(v.blocks||[]).some(b=>b.items.some(x=>x[0]===id)));
-  return {einh,bl,ver,any:einh>0||bl||ver};
+  let einh=0, einhN=0; Object.entries(S.days).forEach(([k,d])=>(d.done||[]).forEach(a=>{if((a.ex||[]).some(i=>i.id===id)){einh++;einhN++}}));
+  const s=S.session;
+  if(s&&s.items.some(i=>i.id===id)){einh++;const d=S.days[s.date],a=d&&d.done[findEntry(s.date,s.block)];if(!(a&&(a.ex||[]).some(i=>i.id===id)))einhN++}
+  const nbl=P().blocks.filter(b=>b.items.some(x=>x[0]===id)).length, bl=nbl>0, ver=P().versions.some(v=>(v.blocks||[]).some(b=>b.items.some(x=>x[0]===id)));
+  return {einh,einhN,nbl,bl,ver,any:einh>0||bl||ver};
+}
+// 1.0.23 (Wunsch des Nutzers 07.10.2026, nur im Testkanal erreichbar): eine benutzte Übung überall entfernen. Blöcke (neue Plan-Version),
+// Einträge in allen Einheiten aller Tage samt Abweichungen (abw) und Namen außerplanmäßiger Übungen, Cue-Einträge im Journal, laufende Einheit,
+// ihr Schnappschuss und Timer. Einheiten, die dadurch leer werden, fallen weg. Ältere Plan-Versionen bleiben unverändert (Verlauf: „gelöschte Übung“).
+// Gibt die Zahl der Blöcke zurück, aus denen die Übung entfernt wurde.
+function exPurge(id,names){
+  const nm=new Set(names.filter(Boolean)), cat=(exById(id)||{}).cat;
+  const ohne=arr=>arr.filter(i=>!(i&&i.id===id));
+  // Eintrag einer Einheit bereinigen; null = leer geworden (fällt weg)
+  const eintrag=a=>{a.ex=ohne(a.ex);if(!a.ex.length)return null;
+    a.skipped=a.ex.filter(i=>i&&i.skip).length;
+    if(Array.isArray(a.extra)){a.extra=a.extra.filter(n=>!nm.has(n));if(!a.extra.length)a.extra=null}
+    if(cat==='I'&&a.type==='I'&&!a.ex.some(i=>i&&!i.skip&&(exById(i.id)||{}).cat==='I'))a.type='K';
+    return a};
+  const abw=t=>typeof t==='string'&&[...nm].some(n=>t==='+ '+n||t==='+ '+n+' (Testphase)'||t==='− '+n+' übersprungen');
+  let nbl=0; P().blocks.forEach(b=>{const n=b.items.length;b.items=b.items.filter(x=>x[0]!==id);if(b.items.length!==n)nbl++});
+  Object.values(S.days).forEach(d=>{if(!d||typeof d!=='object')return;
+    if(Array.isArray(d.done))d.done=d.done.filter(a=>!(a&&Array.isArray(a.ex)&&a.ex.some(i=>i&&i.id===id))||!!eintrag(a));
+    if(Array.isArray(d.abw))d.abw=d.abw.filter(t=>!abw(t));
+    if(Array.isArray(d.notes))d.notes=d.notes.filter(n=>!(n&&n.k==='Cue'&&nm.has(n.b)))});
+  const s=S.session;
+  if(s&&Array.isArray(s.items)&&s.items.some(i=>i&&i.id===id)){
+    if(TIMER&&TIMER.it&&TIMER.it.id===id)stopTimer();
+    if(SETEDIT&&SETEDIT.it&&SETEDIT.it.id===id)SETEDIT=null;
+    const warOffen=s.items.some(i=>i&&i.id===id&&i.open);
+    s.items=ohne(s.items);
+    if(s.snapshot!=null){try{const a=JSON.parse(s.snapshot);if(a&&Array.isArray(a.ex)){const r=eintrag(a);s.snapshot=r?JSON.stringify(r):null}}catch(x){}}
+    if(!s.items.length){stopTimer();S.session=null;S.sessShow=false}
+    else if(warOffen)openFirst(s.items)}
+  if(S.openEx===id)S.openEx=null; delete BILMODE[id];
+  if(BIB_NOTE&&BIB_NOTE.id===id)BIB_NOTE=null; if(CUE_NEW&&CUE_NEW.id===id)CUE_NEW=null; if(VIDPLAY&&VIDPLAY.split(':')[1]===id)VIDPLAY=null;
+  return nbl;
 }
 function removeExercise(id){
-  const e=exById(id); if(!e)return; const i=EX.indexOf(e); if(i>=0)EX.splice(i,1);
+  const e=exById(id); if(!e)return; const seed=exSeed().find(x=>x.id===id);
+  const nbl=exPurge(id,[e.name,seed&&seed.name]);
+  const i=EX.indexOf(e); if(i>=0)EX.splice(i,1);
   if((S.customEx||[]).some(c=>c.id===id))S.customEx=S.customEx.filter(c=>c.id!==id); else {S.exDeleted=S.exDeleted||[];if(!S.exDeleted.includes(id))S.exDeleted.push(id)}
   ['exEdit','cues','dose','exStatus','exTests','exNotes'].forEach(k=>{if(S[k]&&typeof S[k]==='object')delete S[k][id]});
-  if(S.openEx===id)S.openEx=null;
+  if(nbl)newVersion('− '+e.name+' (gelöscht)');
   addEvent(e.name+': gelöscht');
+  return nbl;
 }
 // Übung bearbeiten: Name, Kategorie, Region, Seite, Prinzip-Tags, Video-Link, Dosierung (vorhandenes Dosis-Sheet). Speichern ohne Rückfrage.
 function exEditSheet(e){
   if(!e)return;
-  let nm=e.name,cat=e.cat,region=e.region||'',side=e.side,tags=[...e.tags],video=e.video||'';
-  const keep=()=>{const i=document.getElementById('en');if(i)nm=i.value;const r=document.getElementById('ereg');if(r)region=r.value;const v=document.getElementById('evid');if(v)video=v.value};
+  let nm=e.name,cat=e.cat,region=e.region||'',side=e.side,tags=[...e.tags],video=e.video||'',pos=posOf(e.pos)?e.pos:null;
+  const keep=()=>{const i=document.getElementById('en');if(i)nm=i.value;const r=document.getElementById('ereg');if(r)region=r.value;const v=document.getElementById('evid');if(v)video=v.value;const ps=document.getElementById('epos');if(ps)pos=ps.value===''?null:+ps.value};
   const draw=()=>{const us=exUsage(e.id);
     openSheet(`<h3>Übung bearbeiten</h3>
     <div class="lbl">Name</div><input type="text" id="en" value="${esc(nm)}" placeholder="Name">
     <div class="lbl">Kategorie</div><div class="chips">${[['K','Korrektiv'],['I','Intensiv']].map(([k,l])=>`<button class="chip sm ${cat===k?'on':''}" data-ecat="${k}">${l}</button>`).join('')}</div>
     <div class="lbl">Region</div><input type="text" id="ereg" placeholder="z. B. Becken / Hüfte" value="${esc(region)}">
     <div class="lbl">Seite</div><div class="chips">${['beidseitig','getrennt'].map(x=>`<button class="chip sm ${side===x?'on':''}" data-eside="${x}">${x}</button>`).join('')}</div>
+    <div class="lbl">Position</div><select id="epos">${posOpts(pos,'keine')}</select>
     <div class="lbl">Prinzip-Tags</div>${tagChips(tags,'data-etag')}
     <div class="lbl">Video-Link</div><input type="url" id="evid" inputmode="url" placeholder="https://…" value="${esc(video)}">
     <div class="row between"><span class="lbl">Dosierung</span><button class="chip sm" id="edose">${doseStr(e.d)} ✎</button></div>
     <button class="btn primary wide" id="esave">Speichern</button>
-    <div style="margin-top:22px">${us.any?`<div class="hint" id="edelHint">Löschen geht nur, solange die Übung in keiner Einheit und keinem Block vorkommt${us.einh?` (${us.einh} Einheit${us.einh===1?'':'en'})`:us.bl?' (steht im Plan)':' (stand in einer früheren Plan-Version)'}. Setze sie auf verworfen.</div>`:'<button class="btn danger wide" id="edel">Übung löschen</button>'}</div>`);
+    <div style="margin-top:22px">${us.any&&!TEST?`<div class="hint" id="edelHint">Löschen geht nur, solange die Übung in keiner Einheit und keinem Block vorkommt${us.einh?` (${us.einh} Einheit${us.einh===1?'':'en'})`:us.bl?' (steht im Plan)':' (stand in einer früheren Plan-Version)'}. Setze sie auf verworfen.</div>`:'<button class="btn danger wide" id="edel">Übung löschen</button>'}</div>`);
     document.querySelectorAll('#sheet [data-ecat]').forEach(b=>b.onclick=()=>{keep();cat=b.dataset.ecat;draw()});
     document.querySelectorAll('#sheet [data-eside]').forEach(b=>b.onclick=()=>{keep();side=b.dataset.eside;draw()});
     document.querySelectorAll('#sheet [data-etag]').forEach(b=>b.onclick=()=>{const t=b.dataset.etag;tags=tags.includes(t)?tags.filter(x=>x!==t):[...tags,t];b.classList.toggle('on',tags.includes(t));b.setAttribute('aria-pressed',tags.includes(t))});
     // Dosis: vorhandenes Sheet (speichert sofort, Ereignis im Verlauf), danach zurück ins Bearbeiten mit den bisherigen Eingaben
     document.getElementById('edose').onclick=()=>{keep();doseSheet(e,draw)};
     document.getElementById('esave').onclick=()=>{keep();const name=nm.trim();if(!name){toast('Name fehlt');return}
-      const f={name,cat,region:region.trim(),side,tags:[...tags],video:normUrl(video)};
+      const f={name,cat,region:region.trim(),side,tags:[...tags],video:normUrl(video),pos};
       const ch=[];if(f.name!==e.name)ch.push(`umbenannt in „${f.name}“`);if(f.cat!==e.cat)ch.push('Kategorie '+TYPES[f.cat].l);if(f.side!==e.side)ch.push('Seite '+f.side);
-      if(f.region!==(e.region||''))ch.push('Region '+(f.region||'leer'));if(f.tags.join('|')!==e.tags.join('|'))ch.push('Prinzip-Tags '+(f.tags.join(', ')||'keine'));if(f.video!==(e.video||''))ch.push(f.video?'Video-Link':'Video-Link entfernt');
+      if(f.region!==(e.region||''))ch.push('Region '+(f.region||'leer'));if(f.tags.join('|')!==e.tags.join('|'))ch.push('Prinzip-Tags '+(f.tags.join(', ')||'keine'));if(f.video!==(e.video||''))ch.push(f.video?'Video-Link':'Video-Link entfernt');if(f.pos!==(posOf(e.pos)?e.pos:null))ch.push('Position '+(f.pos?posName(f.pos):'keine'));
       if(!ch.length){closeSheet();toast('Unverändert');return}
-      const alt=e.name; Object.assign(e,f); if(!e.video)delete e.video;
+      const alt=e.name; Object.assign(e,f); if(!e.video)delete e.video; if(!e.pos)delete e.pos;
       if(!(S.customEx||[]).some(c=>c.id===e.id)){S.exEdit=S.exEdit||{};S.exEdit[e.id]=f}
       addEvent(alt+': '+ch.join(', ')); save(); closeSheet(); toast('Übung gespeichert'); render()};
     const del=document.getElementById('edel');
-    if(del)del.onclick=()=>confirmSheet('Übung „'+esc(e.name)+'“ löschen?',()=>{removeExercise(e.id);save();toast('Übung gelöscht');render()},'Löschen','<div class="hint">Sie kommt in keiner Einheit und keinem Block vor. Cues, Notizen und Absicht der Übung werden mit gelöscht.</div>');
+    // Testkanal (1.0.23): Löschen immer möglich; die eine Rückfrage nennt, wo die Übung vorkommt. Echter Kanal: nur unbenutzt (sonst Hinweis oben).
+    const wo=[us.nbl?us.nbl+(us.nbl===1?' Block':' Blöcken'):'',us.einhN?us.einhN+(us.einhN===1?' Einheit':' Einheiten'):''].filter(Boolean);
+    const delText=wo.length?`<div class="warn" id="edelWo">Kommt vor in ${wo.join(' und ')} und wird dort mit entfernt${us.nbl?' (neue Plan-Version)':''}. Einheiten ohne weitere Übung fallen weg. Cues, Notizen und Absicht werden mit gelöscht.</div>`
+      :`<div class="hint">Sie kommt in keiner Einheit und keinem Block vor. Cues, Notizen und Absicht der Übung werden mit gelöscht.${us.ver?' In älteren Plan-Versionen steht sie danach als „gelöschte Übung“.':''}</div>`;
+    if(del)del.onclick=()=>confirmSheet('Übung „'+esc(e.name)+'“ löschen?',()=>{const nbl=removeExercise(e.id);save();toast(nbl?'Übung gelöscht, neue Version v'+P().versions[P().versions.length-1].v:'Übung gelöscht');render()},'Löschen',delText);
   };
   draw();
 }
@@ -1712,7 +1857,7 @@ sheet.addEventListener('click',()=>{const k=sheet.dataset.bibk;if(k)BIBY[k]=shee
 function lastAssess(){
   const ks=Object.keys(S.days).filter(k=>k<=iso(today)&&(S.days[k].tests||[]).length).sort();
   if(ks.length)return dfmt(ks[ks.length-1]);
-  let best=null;Object.values(TESTVALS).forEach(v=>v.forEach(x=>{const key=x[0].split('.').reverse().join('');if(!best||key>best.key)best={key,d:x[0]}}));
+  let best=null;testList().map(t=>testVals(t.n)).forEach(v=>v.forEach(x=>{const key=x[0].split('.').reverse().join('');if(!best||key>best.key)best={key,d:x[0]}}));
   return best?best.d:null;
 }
 function rBib(){
@@ -1721,7 +1866,9 @@ function rBib(){
   const ni=S.inbox.length;
   const inb=ni?`<button class="inboxrow" id="inboxRow"><span>${ni} Notiz${ni===1?'':'en'} ohne Bezug</span><span class="go">zuordnen ›</span></button>`:'';
   const f=S.bibFilter||'alle';
-  const items=EX.filter(e=>f==='alle'||(f==='K'&&e.cat==='K')||(f==='I'&&e.cat==='I')||(f==='test'&&exStatus(e)==='testphase')||(f==='geparkt'&&['geparkt','verworfen'].includes(exStatus(e))));
+  const fp=S.bibPos??null; // Positionsfilter: null alle, 0 ohne Position, sonst Nummer
+  const items=EX.filter(e=>f==='alle'||(f==='K'&&e.cat==='K')||(f==='I'&&e.cat==='I')||(f==='test'&&exStatus(e)==='testphase')||(f==='geparkt'&&['geparkt','verworfen'].includes(exStatus(e))))
+    .filter(e=>fp==null||(fp===0?!posOf(e.pos):e.pos===fp));
   // Test-Retest: letzte 8 Paare, chronologisch; Tipp öffnet den Tag
   const rtRow=e=>{const ps=rtPairs(e.id).slice(-8);if(!ps.length)return '';
     return `<div class="rtrow exsec"><span class="ftl">Test-Retest</span><div class="rts">${ps.map(o=>`<button class="rtl" data-rtday="${o.k}">${dfmt(o.k)} · ${esc(testShort(o.rt.test))} · ${rtShort(o.rt)}</button>`).join('')}</div></div>`};
@@ -1748,8 +1895,8 @@ function rBib(){
   const zielChips=e=>{const ts=exTests(e.id);return ts.length&&S.openEx!==e.id?`<span class="zchips"><span class="zl">soll verbessern</span>${ts.map(t=>`<span class="zchip">${esc(goalName(t))}</span>`).join('')}</span>`:''};
   // leere Bibliothek (echter Kanal beim Start): nur Hinweis und „+ Neue Übung“, ohne Suche und Filter
   const leer=!EX.length;
-  main.innerHTML=nav+inb+(leer?'':`<input type="text" id="q" placeholder="Suchen, auch Spitznamen"><div class="chips">${[['alle','Alle'],['K','Korrektiv'],['I','Intensiv'],['test','Testphase'],['geparkt','Geparkt']].map(([k,l])=>`<button class="chip sm ${f===k?'on':''}" data-f="${k}">${l}</button>`).join('')}</div>`)+`
-  <section class="card"><div class="list" id="exl">${leer?'<div class="hint" id="exEmpty">Noch keine Übungen. Lege die erste mit „+ Neue Übung“ an.</div>':items.length?'':'<div class="hint">Keine Übung in diesem Filter.</div>'}${items.map(e=>{const st=exStatus(e);const b=bilanz(e);const pb=planBlocksOf(e.id);const ip=pb.length>0;return `<div class="ex ${S.openEx===e.id?'open':''}"><div class="head"><button class="name" data-open="${e.id}"><b>${esc(e.name)} <span class="act ${e.cat}">${e.cat}</span> ${ip?`<span class="badge">im Plan · ${esc(pb.map(x=>x.name).join(', '))}</span>`:''} ${st!=='aktiv'?`<span class="badge ${st==='testphase'?'test':st}">${st}</span>`:''}</b><small>${[esc(e.region||''),doseStr(e.d)].filter(Boolean).join(' · ')}${e.side==='getrennt'?' · L/R':''}</small>${zielChips(e)}</button></div>
+  main.innerHTML=nav+inb+(leer?'':`<input type="text" id="q" placeholder="Suchen, auch Spitznamen"><div class="chips">${[['alle','Alle'],['K','Korrektiv'],['I','Intensiv'],['test','Testphase'],['geparkt','Geparkt']].map(([k,l])=>`<button class="chip sm ${f===k?'on':''}" data-f="${k}">${l}</button>`).join('')}<select class="chip sm posf${fp!=null?' on':''}" id="posF" aria-label="Position">${posOpts(fp,'Position: alle')}<option value="0"${fp===0?' selected':''}>ohne Position</option></select></div>`)+`
+  <section class="card"><div class="list" id="exl">${leer?'<div class="hint" id="exEmpty">Noch keine Übungen. Lege die erste mit „+ Neue Übung“ an.</div>':items.length?'':'<div class="hint">Keine Übung in diesem Filter.</div>'}${items.map(e=>{const st=exStatus(e);const b=bilanz(e);const pb=planBlocksOf(e.id);const ip=pb.length>0;return `<div class="ex ${S.openEx===e.id?'open':''}"><div class="head"><button class="name" data-open="${e.id}"><b>${esc(e.name)} <span class="act ${e.cat}">${e.cat}</span> ${ip?`<span class="badge">im Plan · ${esc(pb.map(x=>x.name).join(', '))}</span>`:''} ${st!=='aktiv'?`<span class="badge ${st==='testphase'?'test':st}">${st}</span>`:''}</b><small>${[esc(e.region||''),doseStr(e.d)].filter(Boolean).join(' · ')}${e.side==='getrennt'?' · L/R':''}${posOf(e.pos)?` · <span class="pos">${esc(posName(e.pos))}</span>`:''}</small>${S.openEx===e.id&&POSINFO===e.id&&posOf(e.pos)?`<small class="posinfo">${esc(posOf(e.pos)[2])}</small>`:''}${zielChips(e)}</button></div>
     <div class="body">${zielSec(e)}
     <div class="exsec"><span class="ftl">Durchführung</span><div class="bilanz">${bilKachel(e,'g',b.n,'gemacht')}${bilKachel(e,'p',b.p,'Probleme')}</div>
     ${S.openEx===e.id&&BILMODE[e.id]?doneRow(e,BILMODE[e.id]):''}
@@ -1767,13 +1914,17 @@ function rBib(){
   document.querySelectorAll('[data-bibopen]').forEach(b=>b.onclick=()=>openBibSheet(b.dataset.bibopen));
   const ir=document.getElementById('inboxRow'); if(ir)ir.onclick=inboxSheet;
   document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{S.bibFilter=b.dataset.f;render()});
+  const pf=document.getElementById('posF'); if(pf)pf.onchange=()=>{S.bibPos=pf.value===''?null:+pf.value;save();render()};
   const qi=document.getElementById('q'); if(qi)qi.oninput=e=>{const v=e.target.value.toLowerCase();document.querySelectorAll('#exl .ex').forEach(it=>it.style.display=it.textContent.toLowerCase().includes(v)?'':'none')};
-  document.getElementById('newExBib').onclick=()=>newExerciseSheet(id=>{S.openEx=id;S.bibFilter='alle';render();const c=document.querySelector('#exl .ex.open');if(c)c.scrollIntoView({block:'nearest'})});
+  document.getElementById('newExBib').onclick=()=>newExerciseSheet(id=>{S.openEx=id;S.bibFilter='alle';S.bibPos=null;render();const c=document.querySelector('#exl .ex.open');if(c)c.scrollIntoView({block:'nearest'})});
   document.querySelectorAll('[data-exedit]').forEach(b=>b.onclick=()=>exEditSheet(exById(b.dataset.exedit)));
   document.querySelectorAll('[data-exziel]').forEach(b=>b.onclick=()=>exTestsSheet(exById(b.dataset.exziel),()=>{closeSheet();render()}));
   // Kachel antippen klappt die Tage auf, erneut antippen wieder zu; nur eine Liste je Übung
   document.querySelectorAll('[data-bil]').forEach(b=>b.onclick=()=>{const [id,m]=b.dataset.bil.split(':');BILMODE[id]=BILMODE[id]===m?null:m;render()});
-  document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{S.openEx=S.openEx===b.dataset.open?null:b.dataset.open;render()});
+  // Tipp auf die Position in der offenen Karte blendet die Erläuterung ein bzw. aus, sonst auf/zu wie bisher
+  document.querySelectorAll('[data-open]').forEach(b=>b.onclick=ev=>{const id=b.dataset.open,e=exById(id);
+    if(S.openEx===id&&ev.target.closest('.pos')&&e&&posOf(e.pos)&&posOf(e.pos)[2]){POSINFO=POSINFO===id?null:id;render();return}
+    S.openEx=S.openEx===id?null:id;POSINFO=null;render()});
   document.querySelectorAll('[data-rtday]').forEach(b=>b.onclick=()=>daySheet(b.dataset.rtday));
   document.querySelectorAll('[data-exday]').forEach(b=>b.onclick=()=>daySheet(b.dataset.exday));
   // Notizen zur Übung: „+“ öffnet das Feld auf der Karte (bibNoteDone); Ändern und Löschen über noteEditSheet (auch im Training)
@@ -1817,16 +1968,18 @@ function openBibSheet(kind,keep){
       const v=r.v; const end=v.to||iso(today); const n=daysBetween(v.from,end); const ds=[...Array(Math.max(n,1)).keys()].map(i=>addD(new Date(v.from+'T12:00:00'),i)); const s=stats(ds); const open=S.openV===v.v;
       return `<div class="item vrow ${open?'open':''}" data-v="${v.v}"><div class="t"><b>v${v.v} · ${v.to?dfmt(v.from)+' – '+dfmt(v.to):'seit '+dfmt(v.from)} · ${n} Tag${n===1?'':'e'}</b><small>${esc(v.change)}</small>
         <div class="row" style="gap:6px;margin-top:6px"><span class="act K">K ×${s.cnt('K')}</span><span class="act I">I ×${s.cnt('I')}</span><span class="act Tennis">T ×${s.cnt('Tennis')}</span><span class="kpi"><span class="hint">Form</span><span class="sy ${cls(Math.round(s.tf))}">${fmtN(s.tf)}</span></span><span class="kpi"><span class="hint">Sympt.</span><span class="sy ${clsSy(Math.round(s.sc))}">${fmtN(s.sc)}</span></span><span class="kpi"><span class="hint">vollst.</span><span>${s.full}/${s.sess}</span></span></div>
-        ${open?`<div class="vdet">${(v.blocks||[]).map(vb=>`<div class="vblock"><h2>${esc(vb.name)} <span class="act ${vb.type}">${TYPES[vb.type].l}</span></h2><div class="list">${vb.items.map(([id,pr,sd])=>{const e=exById(id);return `<div class="item"><span class="act ${e.cat}">${e.cat}</span><div class="t"><b>${esc(e.name)}${exStatus(e)==='testphase'?' <span class="badge test">Testphase</span>':''}</b><small>${doseStr(e.d)}${sideLbl(sd)||(e.side==='getrennt'?' · L/R':'')}</small></div></div>`}).join('')||'<div class="hint">leer</div>'}</div></div>`).join('')||'<div class="hint">Keine Blöcke.</div>'}</div>`:''}
+        ${open?`<div class="vdet">${(v.blocks||[]).map(vb=>`<div class="vblock"><h2>${esc(vb.name)} <span class="act ${vb.type}">${TYPES[vb.type].l}</span></h2><div class="list">${vb.items.map(([id,pr,sd])=>{const e=exById(id);if(!e)return `<div class="item exweg"><span class="act" style="color:var(--ink3);box-shadow:inset 0 0 0 1px var(--line)">–</span><div class="t"><b style="color:var(--ink3);font-weight:600">gelöschte Übung</b><small>${sideLbl(sd).replace(/^ · /,'')}</small></div></div>`;return `<div class="item"><span class="act ${e.cat}">${e.cat}</span><div class="t"><b>${esc(e.name)}${exStatus(e)==='testphase'?' <span class="badge test">Testphase</span>':''}</b><small>${doseStr(e.d)}${sideLbl(sd)||(e.side==='getrennt'?' · L/R':'')}</small></div></div>`}).join('')||'<div class="hint">leer</div>'}</div></div>`).join('')||'<div class="hint">Keine Blöcke.</div>'}</div>`:''}
         </div><span>${open?'▾':'▸'}</span></div>`}).join('')}</div></section>`;
   } else {
-    const groups=['Table','Bewegung','Eigene'];
-    // Datumsspalten: zwei Beispielspalten (TESTVALS), Tage mit Messungen (außer heute), rechts „heute“; höchstens 6, die neuesten
+    // 1.0.24: Katalog aus testList() (eingebaut ohne gelöschte, dazu eigene); Gruppen ohne Test entfallen
+    const TL=testList();
+    const groups=TEST_GRUPPEN.filter(g=>TL.some(t=>t.g===g));
+    // Datumsspalten: zwei Beispielspalten (TESTVALS, nur solange ein Test dort einen Wert hat), Tage mit Messungen (außer heute), rechts „heute“; höchstens 6, die neuesten
     const tk=iso(today);
     const exIso=l=>{const [dd,mm]=l.split('.');const y=today.getFullYear();const k=`${y}-${mm}-${dd}`;return k>tk?`${y-1}-${mm}-${dd}`:k};
     const dayVal=(k,n)=>{const ts=(S.days[k].tests||[]).filter(x=>x.n===n);return ts.length?ts[ts.length-1]:null};
     const cm=new Map();
-    if(TEST)['20.08.','03.09.'].forEach(l=>cm.set(exIso(l),{lbl:l,val:n=>{const x=(TESTVALS[n]||[]).find(v=>v[0]===l);return x?{l:x[1],r:x[2]}:null},miss:'–'}));
+    if(TEST)['20.08.','03.09.'].forEach(l=>{if(TL.some(t=>testVals(t.n).some(v=>v[0]===l)))cm.set(exIso(l),{lbl:l,val:n=>{const x=testVals(n).find(v=>v[0]===l);return x?{l:x[1],r:x[2]}:null},miss:'–'})});
     Object.keys(S.days).filter(k=>k<tk&&(S.days[k].tests||[]).length).forEach(k=>cm.set(k,{lbl:dfmt(k),val:n=>dayVal(k,n),miss:'–'}));
     const cols=[...[...cm.entries()].sort((a,b)=>a[0].localeCompare(b[0])).slice(-5).map(([k,c])=>Object.assign({k},c)),{k:tk,lbl:'heute',val:n=>dayVal(tk,n),miss:'·'}];
     // Plan-Version, die an diesem Datum galt; „heute“ = aktuelle Version
@@ -1836,10 +1989,11 @@ function openBibSheet(kind,keep){
     const rtDiff=rt=>rtSides(rt).map(([s,a,b])=>`<span style="white-space:nowrap">${s?s+' ':''}${rtDelta(rt.test,a,b,true)||esc(a)+'→'+esc(b)}</span>`).join(' · ');
     const rtLine=t=>{const es=Object.entries(rtLast[t.n]||{}).filter(([id])=>exById(id)).sort((a,b)=>b[1].k.localeCompare(a[1].k)).slice(0,4);if(!es.length)return '';
       return `<div class="rtest"><b>${esc(testShort(t.n))}</b> · ${es.map(([id,o])=>`<span class="rte"><button class="rtex" data-rtex="${id}">${esc(exById(id).name)}</button> ${rtDiff(o.rt)} <span style="white-space:nowrap">(${dfmt(o.k)})</span></span>`).join(' · ')}</div>`};
-    const rtBlock=g=>{const rows=TESTS.filter(t=>t.g===g).map(rtLine).join('');return rows?`<div class="rtblock"><span class="ftl">Retests</span>${rows}</div>`:''};
-    const keinTest=cols.length===1&&!TESTS.some(t=>cols[0].val(t.n));
-    html=`${keinTest?'<div class="hint" id="testsEmpty">Noch keine Messung. „Assessment starten“ misst die neun Tests der Vorlage nacheinander, „Einzeltest“ einen einzelnen.</div>':''}<div class="row between"><div class="hint">Tabelle wie in der Trainer-Vorlage. Spalten = Messdaten, L / R.</div><div class="row" style="gap:8px"><button class="btn primary" id="assess">Assessment starten</button><button class="btn ghost" id="einzel">Einzeltest</button></div></div>
-    ${groups.map(g=>`<section class="card"><h2>${g==='Table'?'Table Tests (Grad)':g==='Bewegung'?'Bewegungstests (cm)':'Eigene Tests'}</h2><div class="matrix-wrap"><table class="matrix tests"><thead><tr><th>Test</th>${cols.map(c=>`<th colspan="2">${c.lbl}${pvAt(c)}</th>`).join('')}</tr></thead><tbody>${TESTS.filter(t=>t.g===g).map(t=>`<tr><td>${t.n}<br><span class="hint">${t.u}</span></td>${cols.map(c=>{const v=c.val(t.n);return v?`<td>${esc(v.l)}</td><td>${esc(v.r)}</td>`:`<td>${c.miss}</td><td>${c.miss}</td>`}).join('')}</tr>`).join('')}</tbody></table></div>${rtBlock(g)}</section>`).join('')}`;
+    const rtBlock=g=>{const rows=TL.filter(t=>t.g===g).map(rtLine).join('');return rows?`<div class="rtblock"><span class="ftl">Retests</span>${rows}</div>`:''};
+    const keinTest=cols.length===1&&!TL.some(t=>cols[0].val(t.n));
+    // Testname in der Tabelle: Tipp öffnet den Test („im Assessment“, „Test löschen“)
+    html=`${keinTest?`<div class="hint" id="testsEmpty">${TL.length?'Noch keine Messung. „Assessment starten“ misst die Tests mit „im Assessment“ nacheinander, „Einzeltest“ einen einzelnen.':'Kein Test vorhanden. „+ Test“ legt einen an.'}</div>`:''}<div class="row between"><div class="hint">Tabelle wie in der Trainer-Vorlage. Spalten = Messdaten, L / R. Tipp auf einen Test: im Assessment, löschen.</div><div class="row" style="gap:8px"><button class="btn primary" id="assess">Assessment starten</button><button class="btn ghost" id="einzel">Einzeltest</button><button class="chip sm" id="testNew">+ Test</button></div></div>
+    ${groups.map(g=>`<section class="card"><h2>${g==='Table'?'Table Tests (Grad)':g==='Bewegung'?'Bewegungstests (cm)':'Eigene Tests'}</h2><div class="matrix-wrap"><table class="matrix tests"><thead><tr><th>Test</th>${cols.map(c=>`<th colspan="2">${c.lbl}${pvAt(c)}</th>`).join('')}</tr></thead><tbody>${TL.filter(t=>t.g===g).map(t=>`<tr><td><button class="tname" data-tinfo="${TL.indexOf(t)}">${esc(t.n)}</button><br><span class="hint">${esc(t.u)}</span></td>${cols.map(c=>{const v=c.val(t.n);return v?`<td>${esc(v.l)}</td><td>${esc(v.r)}</td>`:`<td>${c.miss}</td><td>${c.miss}</td>`}).join('')}</tr>`).join('')}</tbody></table></div>${rtBlock(g)}</section>`).join('')}`;
   }
   const y=keep?(BIBY[kind]||0):0;
   openSheet(`<div class="daynav bshead"><h3>${T}</h3><button class="xbtn" id="bsX" aria-label="Schließen">✕</button></div>${html}`,true);
@@ -1874,13 +2028,17 @@ function openBibSheet(kind,keep){
   } else if(kind==='verlauf'){
     document.querySelectorAll('#sheet .vrow').forEach(r=>r.onclick=()=>{S.openV=S.openV===+r.dataset.v?null:+r.dataset.v;re()});
   } else {
-    document.getElementById('assess').onclick=()=>sub(()=>testSheet(TESTS.filter(t=>t.g!=='Eigene')));
+    // Assessment (1.0.24): alle Tests mit „im Assessment“ in der Reihenfolge des Katalogs
+    document.getElementById('assess').onclick=()=>{const al=testList().filter(testInAssess);if(!al.length){toast('Kein Test im Assessment');return}sub(()=>testSheet(al,true))};
     // Einzeltest: Auswahl aller Tests, Abbruch führt ins Tests-Sheet zurück
-    document.getElementById('einzel').onclick=()=>sub(()=>{openSheet(`<h3>Welcher Test?</h3><div class="list">${TESTS.map((t,i)=>`<button class="item" style="width:100%;text-align:left" data-t1="${i}"><div class="t"><b>${t.n}</b><small>${t.u}</small></div><span class="badge">${t.g}</span></button>`).join('')}</div>`);
-      document.querySelectorAll('#sheet [data-t1]').forEach(b=>b.onclick=()=>testSheet([TESTS[+b.dataset.t1]]))});
+    document.getElementById('einzel').onclick=()=>sub(()=>{const TL=testList();openSheet(`<h3>Welcher Test?</h3><div class="list">${TL.map((t,i)=>`<button class="item" style="width:100%;text-align:left" data-t1="${i}"><div class="t"><b>${esc(t.n)}</b><small>${esc(t.u)}</small></div><span class="badge">${t.g}</span></button>`).join('')||'<div class="hint">Kein Test vorhanden.</div>'}</div>`);
+      document.querySelectorAll('#sheet [data-t1]').forEach(b=>b.onclick=()=>testSheet([TL[+b.dataset.t1]]))});
+    // Test anlegen und Test öffnen (im Assessment, löschen); danach zurück ins Tests-Sheet
+    document.getElementById('testNew').onclick=()=>sub(()=>testNewSheet(re));
+    document.querySelectorAll('#sheet [data-tinfo]').forEach(b=>b.onclick=()=>{const t=testList()[+b.dataset.tinfo];if(t)sub(()=>testInfoSheet(t,re))});
     // Retests: Übungsname öffnet die Bibliothekskarte; ist sie durch den Filter ausgeblendet, gilt „Alle“
     document.querySelectorAll('#sheet [data-rtex]').forEach(b=>b.onclick=()=>{closeSheet();S.openEx=b.dataset.rtex;setTab('bib');
-      if(!document.querySelector('#exl .ex.open')){S.bibFilter='alle';render()}
+      if(!document.querySelector('#exl .ex.open')){S.bibFilter='alle';S.bibPos=null;render()}
       const c=document.querySelector('#exl .ex.open'),top=document.querySelector('.top');if(c)window.scrollBy(0,c.getBoundingClientRect().top-(top?top.getBoundingClientRect().bottom:0)-8)});
   }
 }
@@ -1941,7 +2099,7 @@ function rKal(){
   const days=[...Array(M?28:7).keys()].map(i=>addD(start,i));
   const TRAIN=['K','I','Tennis','Laufen','Pause'];
   // part: je Typ die unvollständigen Einheiten („5 von 7“), xtra: Namen außerplanmäßiger Übungen; beides nur Ausgeführt (k = Datum)
-  const grp=(arr,plan,k)=>{const out=[];(arr||[]).forEach(v=>{const t=typeOf(typeof v==='string'?v:v.type);if(!TRAIN.includes(t))return;const fl=!plan&&typeof v!=='string'?sessFill(v,k):null;let f=out.find(o=>o.t===t);if(f)f.n++;else out.push(f={t,n:1,part:[],xtra:[]});if(fl&&!fl.full)f.part.push(fl.done+' von '+fl.n);if(!plan&&typeof v!=='string')(v.ex||[]).filter(i=>i.extra).forEach(i=>{const nm=exById(i.id).name;if(!f.xtra.includes(nm))f.xtra.push(nm)})});return out};
+  const grp=(arr,plan,k)=>{const out=[];(arr||[]).forEach(v=>{const t=typeOf(typeof v==='string'?v:v.type);if(!TRAIN.includes(t))return;const fl=!plan&&typeof v!=='string'?sessFill(v,k):null;let f=out.find(o=>o.t===t);if(f)f.n++;else out.push(f={t,n:1,part:[],xtra:[]});if(fl&&!fl.full)f.part.push(fl.done+' von '+fl.n);if(!plan&&typeof v!=='string')(v.ex||[]).filter(i=>i&&i.extra&&exById(i.id)).forEach(i=>{const nm=exById(i.id).name;if(!f.xtra.includes(nm))f.xtra.push(nm)})});return out};
   const sw=(arr,plan,k)=>{const a=grp(arr,plan,k);return `<span class="cell">${a.length?a.map(o=>{const tt=[o.n>1?o.n+'×':'',o.part.length?'unvollständig, '+o.part.join(' · '):'',o.xtra.length?'außerplanmäßig: '+o.xtra.join(', '):''].filter(Boolean).join(', ');return `<span class="sw ${o.t}${o.part.length?' part':''}${o.xtra.length?' xtra':''}"${tt?` title="${tt}"`:''}>${o.n>1&&!M?o.n:''}</span>`}).join(''):'<span class="hint">·</span>'}</span>`};
   const syCell=v=>v==null||v===0?'<span class="hint">·</span>':`<span class="sy ${clsSy(Math.round(v))}">${fmtN(v)}</span>`;
   const syms=symsIn(days);
@@ -2102,7 +2260,7 @@ function daySheet(k){
     ${pv?`<div class="r"><span class="l">Plan</span><span class="hint">ab heute v${pv.v}: ${esc(pv.change)}</span></div>`:''}
   </div>`;
   const sessions=x.done.filter(a=>a.ex).map(a=>`<section class="card" style="padding:10px"><div class="row between"><b><span class="act ${a.type}">${TYPES[a.type].l}</span> ${esc(labelOf(a.block))}${a.dur?' · '+durStr(a.active,a.dur):''}${(f=>f?` <span style="white-space:nowrap">· ${f.done} von ${f.n}</span>`:'')(sessFill(a,k))}${a.segments>1?` <span class="hint">in ${a.segments} Abschnitten</span>`:''}${isRunning(a.block,k)?' <span class="badge test">läuft</span>':a.open?' <span class="badge test">offen</span>':(f=>f&&!f.full?' <span class="badge">unvollständig</span>':'')(sessFill(a,k))}</b><button class="btn ghost" style="padding:6px 10px;font-size:13px" data-cont2="${a.block}">${a.open||isRunning(a.block,k)?'Weitermachen':'Bearbeiten'}</button></div>
-    <div class="list">${a.ex.map(i=>{const e=exById(i.id);const dv=i.d&&!sameDose(i.d,e.d);return `<div class="item ${i.skip?'skipped':''}" style="padding:7px 0"><div class="t"><b style="font-weight:600${i.skip?';text-decoration:line-through;color:var(--ink3)':''}">${esc(e.name)}${i.extra?' <span class="badge">außerplanmäßig</span>':''}</b><small${i.skip?' style="color:var(--ink3)"':''}>${(setsDone(i).length?esc(setsStr(i,e))+' <span class="hint">(Plan '+doseStr(planD(i,e))+')</span>':doseStr(i.d||e.d))+(sideLbl(i.side)||(e.side==='getrennt'?' · L/R':''))}${i.note?' · '+esc(i.note):''}</small>${i.rt?`<small style="display:block">Retest ${esc(testShort(i.rt.test))}: ${rtText(i.rt)}</small>`:''}</div><span style="text-align:right">${i.skip?'':(i.r?'<span style="color:var(--accent);font-weight:700">✓</span>':'·')+(i.pain?' <span class="badge" style="background:var(--g4);color:#fff">!</span>':'')}${i.t?`<br><small class="hint">${hhmm(i.t)}</small>`:''}</span></div>`}).join('')}</div>
+    <div class="list">${a.ex.filter(i=>i&&exById(i.id)).map(i=>{const e=exById(i.id);const dv=i.d&&!sameDose(i.d,e.d);return `<div class="item ${i.skip?'skipped':''}" style="padding:7px 0"><div class="t"><b style="font-weight:600${i.skip?';text-decoration:line-through;color:var(--ink3)':''}">${esc(e.name)}${i.extra?' <span class="badge">außerplanmäßig</span>':''}</b><small${i.skip?' style="color:var(--ink3)"':''}>${(setsDone(i).length?esc(setsStr(i,e))+' <span class="hint">(Plan '+doseStr(planD(i,e))+')</span>':doseStr(i.d||e.d))+(sideLbl(i.side)||(e.side==='getrennt'?' · L/R':''))}${i.note?' · '+esc(i.note):''}</small>${i.rt?`<small style="display:block">Retest ${esc(testShort(i.rt.test))}: ${rtText(i.rt)}</small>`:''}</div><span style="text-align:right">${i.skip?'':(i.r?'<span style="color:var(--accent);font-weight:700">✓</span>':'·')+(i.pain?' <span class="badge" style="background:var(--g4);color:#fff">!</span>':'')}${i.t?`<br><small class="hint">${hhmm(i.t)}</small>`:''}</span></div>`}).join('')}</div>
     ${a.note?`<div class="cue" style="margin-top:6px">${esc(a.note)}</div>`:''}</section>`).join('');
   const journal=[...x.notes,...x.tests.map(t=>({k:'Test',t:`${t.n}: L ${t.l} · R ${t.r}`}))];
   openSheet(`<div class="daynav"><button class="chip sm" id="dPrev" aria-label="Vortag">‹<span class="dl"> Vortag</span></button><h3>${wd(d)}, ${fmt(d)}</h3><button class="chip sm" id="dNext" aria-label="Folgetag"${nextFut?' disabled':''}><span class="dl">Folgetag </span>›</button><button class="xbtn" id="dClose" aria-label="Schließen">✕</button></div>
@@ -2158,19 +2316,19 @@ function lastTestVal(n,side){
   const ks=Object.keys(S.days).filter(k=>k<=iso(today)).sort().reverse();
   for(const k of ks){const ts=(S.days[k].tests||[]).filter(x=>x.n===n);for(let j=ts.length-1;j>=0;j--){if(ok(ts[j][side]))return ts[j][side]}
     const vs=[];(S.days[k].done||[]).forEach(a=>(a.ex||[]).forEach(i=>{if(i.rt&&i.rt.test===n&&i.rt.vor)vs.push(i.rt.vor)}));for(let j=vs.length-1;j>=0;j--){if(ok(vs[j][side]))return vs[j][side]}}
-  const v=TESTVALS[n]||[];for(let j=v.length-1;j>=0;j--){const x=v[j][side==='l'?1:2];if(ok(x))return x}
+  const v=testVals(n);for(let j=v.length-1;j>=0;j--){const x=v[j][side==='l'?1:2];if(ok(x))return x}
   return null;
 }
 const testNum=v=>{if(v==null)return null;if(typeof v==='number')return v;const m=String(v).replace(',','.').match(/-?\d+(\.\d+)?/);return m?+m[0]:null};
 // ---------- Ziele (Testwerte) ----------
-const testOf=n=>TESTS.find(t=>t.n===n);
-// einseitig gemessen: Kennzeichen im Test-Katalog (TESTS single)
+const testOf=n=>testList().find(t=>t.n===n);
+// einseitig gemessen: Kennzeichen im Test-Katalog (single)
 const testSingle=n=>!!(testOf(n)||{}).single;
 // Testname kurz: Klammerkürzel („Gestrecktes Beinheben (SLR)“ → „SLR“), sonst der Name
 const testShort=n=>{const m=String(n).match(/\(([^)]+)\)\s*$/);return m?m[1]:n};
 const goalName=z=>testShort(z.test)+(z.side==='l'?' links':z.side==='r'?' rechts':z.side==='a'?' · Seite der Ausführung':z.side==='g'?' · Gegenseite':z.side==='b'?' · beide Seiten':'');
 // Zahl in der Einheit des Tests; Texte wie „2 cm“ oder „ja“ unverändert
-function goalVal(n,v){if(v==null||v==='')return '–';if(typeof v!=='number')return String(v);const u=(testOf(n)||{}).u||'';const s=v.toLocaleString('de-DE');return u==='cm'?s+' cm':u==='s'?s+' s':/°/.test(u)?s+'°':s}
+function goalVal(n,v){if(v==null||v==='')return '–';if(typeof v!=='number')return String(v);const u=(testOf(n)||{}).u||'';const s=v.toLocaleString('de-DE');return u==='cm'?s+' cm':u==='s'?s+' s':u==='Wdh'?s+' Wdh':/°/.test(u)?s+'°':s}
 function goalLast(z){const v=lastTestVal(z.test,z.side||'l');return v==null?'noch kein Wert':'zuletzt '+goalVal(z.test,v)}
 function goalStr(z){return `${goalName(z)} · Ziel ${goalVal(z.test,z.target)} · ${goalLast(z)}`}
 // Abschnitte bleiben beim Umbruch zusammen („zuletzt 5 cm“ nicht zerrissen)
@@ -2205,7 +2363,8 @@ function goalSheet(z,after){
   const startVal=()=>{if(yn())return 'ja';const raw=lastTestVal(test,side||'l');if(/°/.test(unit())&&/cm/.test(String(raw||'')))return 0;const n=testNum(raw)??0;return stepOf()===5?Math.round(n/5)*5:n};
   const draw=()=>{
     const single=test&&testSingle(test);
-    const list=`<div class="list">${TESTS.map((t,i)=>`<button class="item" style="width:100%;text-align:left" data-gt="${i}"><div class="t"><b${t.n===test?' style="color:var(--accent)"':''}>${esc(t.n)}</b></div><span class="badge">${t.g}</span></button>`).join('')}</div>`;
+    const TL=testList();
+    const list=`<div class="list">${TL.map((t,i)=>`<button class="item" style="width:100%;text-align:left" data-gt="${i}"><div class="t"><b${t.n===test?' style="color:var(--accent)"':''}>${esc(t.n)}</b></div><span class="badge">${t.g}</span></button>`).join('')}</div>`;
     openSheet(`<h3>${z?'Ziel ändern':'Neues Ziel'}</h3>
     ${pick?`<div class="lbl">Test</div>${list}`:`<button class="goalpick" id="gtest"><span>Test: <b>${esc(testShort(test))}</b> <span class="go">· ändern</span></span></button>
     ${single?'':`<div class="row between"><span class="lbl">Seite</span><div class="chips">${[['l','links'],['r','rechts']].map(([k,l])=>`<button class="chip sm ${side===k?'on':''}" data-gs="${k}">${l}</button>`).join('')}</div></div>`}
@@ -2213,7 +2372,7 @@ function goalSheet(z,after){
       :`<div class="step"><button data-gv="-1" aria-label="Zielwert weniger">−</button><span id="gval">${goalVal(test,val)}</span><button data-gv="1" aria-label="Zielwert mehr">+</button></div>`}</div>
     <div class="hint">Der letzte Messwert erscheint neben dem Ziel.</div>
     <button class="btn primary wide" id="gsave">Speichern</button>${z?'<button class="btn danger wide" id="gdel">Ziel löschen</button>':''}`}`);
-    document.querySelectorAll('#sheet [data-gt]').forEach(b=>b.onclick=()=>{const t=TESTS[+b.dataset.gt];if(t.n!==test){test=t.n;if(testSingle(test))side='';else if(!side)side='l';val=startVal()}pick=false;draw()});
+    document.querySelectorAll('#sheet [data-gt]').forEach(b=>b.onclick=()=>{const t=TL[+b.dataset.gt];if(t.n!==test){test=t.n;if(testSingle(test))side='';else if(!side)side='l';val=startVal()}pick=false;draw()});
     if(pick)return;
     document.getElementById('gtest').onclick=()=>{pick=true;draw()};
     document.querySelectorAll('#sheet [data-gs]').forEach(b=>b.onclick=()=>{side=b.dataset.gs;document.querySelectorAll('#sheet [data-gs]').forEach(c=>c.classList.toggle('on',c===b))});
@@ -2237,7 +2396,8 @@ function exTestsSheet(e,after){
   let list=orig.map(t=>Object.assign({},t)), pick=false, test=null;
   const draw=()=>{
     const rows=list.map((t,i)=>`<div class="item goal"><div class="t"><b>${esc(goalName(t))}</b>${i===0?' <span class="badge">primär</span>':''}</div>${i>0?`<button class="chip sm" data-xtup="${i}" aria-label="${esc(goalName(t))} primär machen">↑</button>`:''}<button class="chip sm" data-xtrm="${i}" aria-label="${esc(goalName(t))} entfernen">−</button></div>`).join('')||'<div class="hint">Noch kein Test gewählt.</div>';
-    const tl=`<div class="list">${TESTS.map((t,i)=>`<button class="item" style="width:100%;text-align:left" data-xt="${i}"><div class="t"><b>${t.n}</b><small>${t.u}</small></div><span class="badge">${t.g}</span></button>`).join('')}</div>`;
+    const TL=testList();
+    const tl=`<div class="list">${TL.map((t,i)=>`<button class="item" style="width:100%;text-align:left" data-xt="${i}"><div class="t"><b>${esc(t.n)}</b><small>${esc(t.u)}</small></div><span class="badge">${t.g}</span></button>`).join('')}</div>`;
     openSheet(`<h3>Soll verbessern · ${esc(e.name)}</h3><div class="list">${rows}</div>
     ${test?`<div class="row between"><span class="lbl">Seite · ${esc(testShort(test))}</span><div class="chips">${(e.side==='getrennt'?[['a','Seite der Ausführung'],['g','Gegenseite']]:[['l','links'],['r','rechts'],['b','beide']]).map(([k,l])=>`<button class="chip sm" data-xs="${k}">${l}</button>`).join('')}</div></div>`
       :pick?`<div class="lbl">Test</div>${tl}`:'<button class="btn ghost wide" id="xtAdd">+ Test</button>'}
@@ -2245,13 +2405,86 @@ function exTestsSheet(e,after){
     const add=t=>{if(list.some(x=>x.test===t.test&&x.side===t.side))toast('Schon gewählt');else list.push(t);pick=false;test=null;draw()};
     document.querySelectorAll('#sheet [data-xtrm]').forEach(b=>b.onclick=()=>{list.splice(+b.dataset.xtrm,1);draw()});
     document.querySelectorAll('#sheet [data-xtup]').forEach(b=>b.onclick=()=>{const [t]=list.splice(+b.dataset.xtup,1);list.unshift(t);draw()});
-    document.querySelectorAll('#sheet [data-xt]').forEach(b=>b.onclick=()=>{const n=TESTS[+b.dataset.xt].n;if(testSingle(n))add({test:n,side:''});else{test=n;pick=false;draw()}});
+    document.querySelectorAll('#sheet [data-xt]').forEach(b=>b.onclick=()=>{const n=TL[+b.dataset.xt].n;if(testSingle(n))add({test:n,side:''});else{test=n;pick=false;draw()}});
     document.querySelectorAll('#sheet [data-xs]').forEach(b=>b.onclick=()=>add({test,side:b.dataset.xs}));
     const xa=document.getElementById('xtAdd');if(xa)xa.onclick=()=>{pick=true;draw()};
     document.getElementById('xtSave').onclick=()=>{
       if(JSON.stringify(list)===JSON.stringify(orig)){toast('Unverändert');after();return}
       S.exTests=S.exTests||{};if(list.length)S.exTests[e.id]=list;else delete S.exTests[e.id];
       addEvent(`${e.name} soll verbessern: ${list.map(goalName).join(', ')||'nichts gewählt'}`);save();toast('Gespeichert');after()};
+  };
+  draw();
+}
+// ---------- Test-Katalog pflegen (1.0.24, Entscheidung des Nutzers 08.10.2026, beide Kanäle) ----------
+// Test anlegen: Name (Pflicht, eindeutig), Einheit (Pflicht), Seiten (links/rechts oder ein Wert), Gruppe (Standard Eigene), „im Assessment“ (Standard aus).
+// Ein Tipp auf „Anlegen“ speichert; Auswahl ohne Neuzeichnen, damit der Fokus im Namensfeld bleibt. after() zeichnet das Tests-Sheet neu.
+function testNewSheet(after){
+  let u=null,single=false,g='Eigene',a=false;
+  openSheet(`<h3>Neuer Test</h3><input type="text" id="tnn" placeholder="Name" autocomplete="off">
+    <div class="lbl">Einheit</div><div class="chips" id="tnu">${TEST_EINHEITEN.map(x=>`<button class="chip sm" data-tnu="${esc(x)}" aria-pressed="false">${esc(x)}</button>`).join('')}</div>
+    <div class="lbl">Seiten</div><div class="chips" id="tns">${[['0','links und rechts'],['1','ein Wert']].map(([k,l])=>`<button class="chip sm ${k==='0'?'on':''}" data-tns="${k}" aria-pressed="${k==='0'}">${l}</button>`).join('')}</div>
+    <div class="lbl">Gruppe</div><div class="chips" id="tng">${TEST_GRUPPEN.map(x=>`<button class="chip sm ${x===g?'on':''}" data-tng="${x}" aria-pressed="${x===g}">${x}</button>`).join('')}</div>
+    <div class="row between"><span class="lbl">im Assessment</span><button class="chip sm" id="tna" aria-pressed="false">nein</button></div>
+    <button class="btn primary wide" id="tnsave">Anlegen</button>`);
+  const wahl=(attr,b)=>document.querySelectorAll(`#sheet [${attr}]`).forEach(c=>{const on=c===b;c.classList.toggle('on',on);c.setAttribute('aria-pressed',on)});
+  document.querySelectorAll('#sheet [data-tnu]').forEach(b=>b.onclick=()=>{u=b.dataset.tnu;wahl('data-tnu',b)});
+  document.querySelectorAll('#sheet [data-tns]').forEach(b=>b.onclick=()=>{single=b.dataset.tns==='1';wahl('data-tns',b)});
+  document.querySelectorAll('#sheet [data-tng]').forEach(b=>b.onclick=()=>{g=b.dataset.tng;wahl('data-tng',b)});
+  const ta=document.getElementById('tna');
+  ta.onclick=()=>{a=!a;ta.classList.toggle('on',a);ta.setAttribute('aria-pressed',a);ta.textContent=a?'ja':'nein'};
+  document.getElementById('tnsave').onclick=()=>{const n=document.getElementById('tnn').value.trim().replace(/\s+/g,' ');
+    if(!n){toast('Name fehlt');return}
+    if(testList().some(t=>testKey(t.n)===testKey(n))){toast('Test „'+n+'“ gibt es schon');return}
+    if(!u){toast('Einheit fehlt');return}
+    S.customTests=Array.isArray(S.customTests)?S.customTests:[];S.customTests.push({n,u,g,single,a});
+    if(S.testAssess)delete S.testAssess[n];
+    addEvent(`Test ${n}: angelegt`);save();toast('Test angelegt');after()};
+  const nf=document.getElementById('tnn'); if(nf)try{nf.focus({preventScroll:true})}catch(e){}
+}
+// Wo kommt der Test vor? Tage mit Messwerten (auch Beispielspalten), Retests (Einheiten aller Tage, laufende Einheit ohne Doppelzählung), Ziele, Übungen mit „Soll verbessern“
+function testUsage(n){
+  let tage=testVals(n).length, rt=0;
+  Object.values(S.days||{}).forEach(d=>{if(!d||typeof d!=='object')return;if((d.tests||[]).some(x=>x&&x.n===n))tage++;
+    (d.done||[]).forEach(a=>((a&&a.ex)||[]).forEach(i=>{if(i&&i.rt&&i.rt.test===n)rt++}))});
+  const s=S.session;
+  if(s&&Array.isArray(s.items)){const d=S.days[s.date],a=d&&Array.isArray(d.done)?d.done[findEntry(s.date,s.block)]:null;
+    s.items.forEach(i=>{if(i&&i.rt&&i.rt.test===n&&!(a&&(a.ex||[]).some(j=>j&&j.id===i.id&&j.rt&&j.rt.test===n)))rt++})}
+  const ziele=((S.plan&&S.plan.ziele)||[]).filter(z=>z&&z.test===n).length;
+  const ex=Object.keys(S.exTests||{}).filter(id=>(S.exTests[id]||[]).some(t=>t&&t.test===n)).length;
+  return {tage,rt,ziele,ex,any:!!(tage||rt||ziele||ex)};
+}
+// Test löschen: Messwerte aller Tage, Retests (auch in der laufenden Einheit und ihrem Schnappschuss), Ziele, „Soll verbessern“ und „im Assessment“.
+// Eingebaute Tests merkt S.testDeleted (bleiben weg, auch nach Update und im Export); „Beispieldaten zurücksetzen“ legt den Stand neu an.
+function removeTest(n){
+  const rtWeg=a=>((a&&Array.isArray(a.ex))?a.ex:[]).forEach(i=>{if(i&&i.rt&&i.rt.test===n)delete i.rt});
+  Object.values(S.days||{}).forEach(d=>{if(!d||typeof d!=='object')return;
+    if(Array.isArray(d.tests))d.tests=d.tests.filter(x=>!(x&&x.n===n));
+    if(Array.isArray(d.done))d.done.forEach(rtWeg)});
+  const s=S.session;
+  if(s){if(Array.isArray(s.items))s.items.forEach(i=>{if(i&&i.rt&&i.rt.test===n)delete i.rt});
+    if(s.snapshot!=null){try{const a=JSON.parse(s.snapshot);if(a&&typeof a==='object'){rtWeg(a);s.snapshot=JSON.stringify(a)}}catch(x){}}}
+  if(S.plan&&Array.isArray(S.plan.ziele))S.plan.ziele=S.plan.ziele.filter(z=>!(z&&z.test===n));
+  Object.keys(S.exTests||{}).forEach(id=>{const l=(S.exTests[id]||[]).filter(t=>!(t&&t.test===n));if(l.length)S.exTests[id]=l;else delete S.exTests[id]});
+  if(Array.isArray(S.customTests))S.customTests=S.customTests.filter(t=>!(t&&t.n===n));
+  if(TESTS.some(t=>t.n===n)){S.testDeleted=Array.isArray(S.testDeleted)?S.testDeleted:[];if(!S.testDeleted.includes(n))S.testDeleted.push(n)}
+  if(S.testAssess)delete S.testAssess[n];
+  addEvent(`Test ${n}: gelöscht`);
+}
+// Test öffnen (Tipp auf den Namen in der Tabelle): Angaben, Schalter „im Assessment“ (ein Tipp, speichert sofort), ganz unten „Test löschen“ mit genau einer Rückfrage
+function testInfoSheet(t,after){
+  const draw=()=>{const an=testInAssess(t);
+    openSheet(`<h3>${esc(t.n)}</h3><div class="hint" id="tiAngaben">${[t.u?'Einheit '+esc(t.u):'',t.single?'ein Wert':'links und rechts','Gruppe '+esc(t.g)].filter(Boolean).join(' · ')}</div>
+    <div class="row between"><span class="lbl">im Assessment</span><button class="chip sm ${an?'on':''}" id="tia" aria-pressed="${an}">${an?'ja':'nein'}</button></div>
+    <div style="margin-top:22px"><button class="btn danger wide" id="tidel">Test löschen</button></div>`);
+    document.getElementById('tia').onclick=()=>{S.testAssess=S.testAssess&&typeof S.testAssess==='object'?S.testAssess:{};
+      if(!an===!!t.a)delete S.testAssess[t.n];else S.testAssess[t.n]=!an;save();toast(!an?'Im Assessment':'Nicht im Assessment');draw()};
+    document.getElementById('tidel').onclick=()=>{const us=testUsage(t.n);
+      const mess=[us.tage?us.tage+(us.tage===1?' Tag':' Tagen'):'',us.rt?us.rt+(us.rt===1?' Retest':' Retests'):''].filter(Boolean);
+      const teile=[mess.length?'Messwerte '+(us.tage?'an ':'aus ')+mess.join(' und '):'',us.ziele?us.ziele+(us.ziele===1?' Ziel':' Ziele'):'',us.ex?'„Soll verbessern“ bei '+us.ex+(us.ex===1?' Übung':' Übungen'):''].filter(Boolean);
+      const liste=teile.length>1?teile.slice(0,-1).join(', ')+' und '+teile[teile.length-1]:teile[0];
+      const ein=TESTS.includes(t)?' Der eingebaute Test bleibt danach weg, auch nach Updates.':'';
+      const body=us.any?`<div class="warn" id="tdelWo">Mit entfernt werden: ${liste}.${ein}</div>`:`<div class="hint" id="tdelWo">Zu diesem Test gibt es keine Messwerte, Ziele oder „Soll verbessern“.${ein}</div>`;
+      confirmSheet('Test „'+esc(t.n)+'“ löschen?',()=>{removeTest(t.n);save();toast('Test gelöscht');after()},'Löschen',body)};
   };
   draw();
 }
@@ -2271,7 +2504,8 @@ function measureSheet(t,opts){
   const sideRow=([sd,l])=>yn?`<div class="row between"><span class="lbl">${l}</span><div class="chips">${['ja','nein'].map(x=>`<button class="chip ${st[sd]===x?'on':''}" data-tyn="${sd}:${x}">${x}</button>`).join('')}</div></div>`
     :`<div class="row between"><span class="lbl">${l}</span><div class="step"><button data-ts="${sd}:-1" aria-label="${l} weniger">−</button><span id="tv-${sd}">${show(st[sd])}</span><button data-ts="${sd}:1" aria-label="${l} mehr">+</button></div></div>
       <input type="text" inputmode="decimal" id="tin-${sd}" placeholder="${l} in ${st.u}" hidden>`;
-  const hint=opts.hint!=null?opts.hint:(t.g==='Table'?'Table Test, Grad in 5°-Schritten':t.g==='Bewegung'?'Bewegungstest, Abstand in cm':'Eigener Test')+(yn?'':' · vorbelegt mit dem letzten Wert');
+  // 1.0.24: eigene Tests in Table oder Bewegung können eine andere Einheit haben; dann nur die Gruppe
+  const hint=opts.hint!=null?opts.hint:(t.g==='Table'?(/°/.test(t.u)?'Table Test, Grad in 5°-Schritten':'Table Test'):t.g==='Bewegung'?(t.u==='cm'?'Bewegungstest, Abstand in cm':'Bewegungstest'):'Eigener Test')+(yn?'':' · vorbelegt mit dem letzten Wert');
   openSheet(`<h3>${esc(opts.title)}</h3><div><b>${t.n}</b><div class="hint">${esc(hint)}</div></div>
   ${mixed?`<div class="row"><span class="lbl">Einheit</span><span class="seg"><button data-tu="°" class="${st.u==='°'?'on':''}">Grad</button><button data-tu="cm" class="${st.u==='cm'?'on':''}">cm</button></span><span class="hint">solange Beine abheben: cm</span></div>`:''}
   <div class="stack" id="tsides">${sides.map(sideRow).join('')}</div>
@@ -2287,10 +2521,12 @@ function measureSheet(t,opts){
   document.getElementById('tsave').onclick=()=>opts.cb({l:store(st.l),r:single?'–':store(st.r)});
   const sk=document.getElementById('tskip'); if(sk)sk.onclick=opts.onSkip;
 }
-function testSheet(list){
+// assess=true: Assessment (Titel „Assessment i/n“, auch bei nur einem Test), sonst Einzeltest
+function testSheet(list,assess){
+  if(!Array.isArray(list)||!list.length)return;
   let i=0; const vals=[];
   const draw=()=>{const t=list[i];
-    measureSheet(t,{title:list.length>1?`Assessment ${i+1}/${list.length}`:'Einzeltest',initial:{l:lastTestVal(t.n,'l'),r:lastTestVal(t.n,'r')},
+    measureSheet(t,{title:assess?`Assessment ${i+1}/${list.length}`:'Einzeltest',initial:{l:lastTestVal(t.n,'l'),r:lastTestVal(t.n,'r')},
       saveLabel:i<list.length-1?'Weiter':'Speichern',note:true,onSkip:next,cb:val=>{vals.push({n:t.n,l:val.l,r:val.r});next()}})};
   const next=()=>{i++;if(i<list.length)draw();else{D().tests.push(...vals);closeSheet();toast(vals.length+(vals.length===1?' Test':' Tests')+' gespeichert');setTab('bib');openBibSheet('tests')}};
   draw();
@@ -2319,8 +2555,9 @@ function rtStart(it,after){
     cb:val=>{it.rt={test:t.n,vor:val,nach:null};closeSheet();after()}});
   const pt=exTests(it.id)[0]; const tz=pt&&testOf(pt.test);
   if(tz){go(tz);return}
-  openSheet(`<h3>Welcher Test?</h3><div class="list">${TESTS.map((t,i)=>`<button class="item" style="width:100%;text-align:left" data-t1="${i}"><div class="t"><b>${t.n}</b><small>${t.u}</small></div><span class="badge">${t.g}</span></button>`).join('')}</div>`);
-  document.querySelectorAll('#sheet [data-t1]').forEach(b=>b.onclick=()=>go(TESTS[+b.dataset.t1]));
+  const TL=testList();
+  openSheet(`<h3>Welcher Test?</h3><div class="list">${TL.map((t,i)=>`<button class="item" style="width:100%;text-align:left" data-t1="${i}"><div class="t"><b>${esc(t.n)}</b><small>${esc(t.u)}</small></div><span class="badge">${t.g}</span></button>`).join('')||'<div class="hint">Kein Test vorhanden.</div>'}</div>`);
+  document.querySelectorAll('#sheet [data-t1]').forEach(b=>b.onclick=()=>go(TL[+b.dataset.t1]));
 }
 function rtAfter(it,after){const t=testOf(it.rt.test);if(!t)return;
   measureSheet(t,{title:'Nachher · '+testShort(t.n),hint:'Vorbelegt mit dem Wert von vorher.',initial:it.rt.vor,cb:val=>{it.rt.nach=val;closeSheet();after()}})}
@@ -2409,20 +2646,36 @@ function exportAge(){if(!S.lastExport)return null;const t=new Date(S.lastExport)
 const entryDays=()=>Object.values(S.days||{}).filter(d=>d.tf!=null||(d.done||[]).length||(d.notes||[]).length||(d.tests||[]).length).length;
 // Backup-Hinweis auf Heute: nie oder vor mehr als 7 Tagen exportiert und mindestens 7 Tage mit Einträgen
 function backupDue(){const a=exportAge();return (a==null||a>7)&&entryDays()>=7}
-function exportData(){
+// Export als JSON-Datei. Im Browser Download (unverändert); fertig() läuft danach (Neuzeichnen).
+// In der Android-Hülle über MFNative.saveFile(name, text, token), gleicher Dateiname und Inhalt (Entscheidung des Nutzers 07.10.2026, docs/HUELLE.md 3.1):
+// erst {ok:true} im Rückruf (Datei geschrieben) setzt „Letzter Export“, zeichnet neu und zeigt „Exportiert: …“; „abgebrochen“ ändert nichts;
+// „schreibfehler“, sofortiges {ok:false}, Ausnahme oder unlesbare Antwort: „Export fehlgeschlagen“, kein Download (geht im WebView nicht).
+// Nur wenn saveFile fehlt (ältere Hülle), lädt die App wie im Browser herunter.
+// 1.0.22 (Fund 7): Solange ein Export-Token offen ist (Dialog der Hülle offen oder Antwort unterwegs), tut ein weiterer Tipp nichts, ohne Toast.
+let EXPORT_TOKEN=null;
+function exportData(fertig){
+  const name=(TEST?'mf-log-test-':'mf-log-')+iso(today)+'.json';
+  if(nativeHas('saveFile')&&EXPORT_TOKEN&&NATIVE_OFFEN.has(EXPORT_TOKEN))return;
+  if(!nativeHas('saveFile')){
   S.lastExport=new Date().toISOString();
   const data={app:'MF-Log',version:APP_VERSION,kanal:KANAL,exportiert:S.lastExport,daten:S};
-  const name=(TEST?'mf-log-test-':'mf-log-')+iso(today)+'.json';
   try{const blob=new Blob([JSON.stringify(data,null,1)],{type:'application/json'});const url=URL.createObjectURL(blob);
     const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);
     save();toast('Exportiert: '+name)}
   catch(e){toast('Export fehlgeschlagen')}
+  if(fertig)fertig();return}
+  // Datei wie im Browser: daten mit dem neuen Zeitstempel, S selbst bleibt bis zum Rückruf unverändert
+  const ts=new Date().toISOString(); let text;
+  try{text=JSON.stringify({app:'MF-Log',version:APP_VERSION,kanal:KANAL,exportiert:ts,daten:Object.assign({},S,{lastExport:ts})},null,1)}catch(e){toast('Export fehlgeschlagen');return}
+  EXPORT_TOKEN=nativeMitRueckruf('saveFile',[name,text],'export',r=>{
+    if(r.ok){S.lastExport=ts;save();render();if(fertig&&fertig!==render)fertig();toast('Exportiert: '+name);return}
+    if(r.error!=='abgebrochen')toast('Export fehlgeschlagen')});
 }
 // ---------- Übungsdatei (art:'uebungen', format 1) ----------
 // Aufbau: {app:'MF-Log', art:'uebungen', format:1, erstellt:'JJJJ-MM-TT', uebungen:[{name, kategorie:'K'|'I', seite:'beidseitig'|'getrennt',
 //   dosis:{saetze, anzahl, einheit:'Wdh'|'s'|'Atemzüge', kg?}, region?, prinzipTags?, video?, status?:'testphase'|'aktiv', cues?, notiz?}]}
 // Beschreibung für Menschen und Agenten: app/README.md, Abschnitt „Übungsdatei“. Prüfwerkzeug: app/tools/uebungen-pruefen.js (nutzt pruefeUebungen).
-const UEB_FELDER=['name','kategorie','seite','dosis','region','prinzipTags','video','status','cues','notiz'];
+const UEB_FELDER=['name','kategorie','seite','dosis','region','position','prinzipTags','video','status','cues','notiz'];
 const UEB_DOSIS=['saetze','anzahl','einheit','kg'];
 const UEB_EINHEITEN=['Wdh','s','Atemzüge'];
 const nameKey=v=>String(v||'').trim().toLowerCase();
@@ -2451,6 +2704,7 @@ function pruefeUebungen(obj){
       if(d.kg!=null&&(typeof d.kg!=='number'||!isFinite(d.kg)||d.kg<=0||d.kg>500))f('kg muss eine Zahl über 0 sein oder fehlen');
     }
     if(u.region!=null&&!txt(u.region))f('Region muss ein Text sein');
+    if(u.position!=null&&!posOf(u.position))f('Position muss eine Nummer von 1 bis '+POS.length+' sein');
     if(u.prinzipTags!=null&&(!Array.isArray(u.prinzipTags)||u.prinzipTags.some(t=>!pzHas(t))))f('Prinzip-Tags nur aus: '+pzTags().join(', '));
     if(u.video!=null&&!txt(u.video))f('Video muss ein Text sein');
     if(u.status!=null&&!['testphase','aktiv'].includes(u.status))f('Status muss „testphase“ oder „aktiv“ sein');
@@ -2461,6 +2715,7 @@ function pruefeUebungen(obj){
     const e={name,cat:u.kategorie,region:txt(u.region)?u.region.trim():'',side:u.seite,dose:'',tags:[...new Set(u.prinzipTags||[])],status:u.status||'testphase',
       cues:(u.cues||[]).map(c=>c.trim()),d:{sets:d.saetze,n:d.anzahl,u:d.einheit,...(d.kg!=null?{kg:d.kg}:{})}};
     const vu=normUrl(u.video); if(vu)e.video=vu;
+    if(u.position!=null)e.pos=u.position;
     if(txt(u.notiz)&&u.notiz.trim())e.notiz=u.notiz.trim();
     liste.push(e);
   });
@@ -2477,7 +2732,7 @@ function importUebungen(obj,fname){
   const da=new Set(EX.map(e=>nameKey(e.name)));
   const neu=liste.filter(e=>!da.has(nameKey(e.name))), alt=liste.filter(e=>da.has(nameKey(e.name)));
   openSheet(`<h3>Übungen importieren</h3><div class="impbox"><span>Datei: <b>${esc(fname)}</b></span><span><b>${neu.length}</b> neu · <b>${alt.length}</b> schon vorhanden</span></div>
-    ${neu.length?`<div class="list" id="uebNeu">${neu.map(e=>`<div class="item"><span class="act ${e.cat}">${e.cat}</span><div class="t"><b>${esc(e.name)}</b><small>${esc(doseStr(e.d))} · ${esc(e.side)}${e.tags.length?' · '+esc(e.tags.join(', ')):''}${e.cues.length?' · '+e.cues.length+(e.cues.length===1?' Cue':' Cues'):''}${e.video?' · Video':''} · ${esc(e.status)}</small></div></div>`).join('')}</div>`:''}
+    ${neu.length?`<div class="list" id="uebNeu">${neu.map(e=>`<div class="item"><span class="act ${e.cat}">${e.cat}</span><div class="t"><b>${esc(e.name)}</b><small>${esc(doseStr(e.d))} · ${esc(e.side)}${e.pos?' · '+esc(posName(e.pos)):''}${e.tags.length?' · '+esc(e.tags.join(', ')):''}${e.cues.length?' · '+e.cues.length+(e.cues.length===1?' Cue':' Cues'):''}${e.video?' · Video':''} · ${esc(e.status)}</small></div></div>`).join('')}</div>`:''}
     ${alt.length?`<div class="hint" id="uebAlt">Schon vorhanden, werden übersprungen: ${alt.map(e=>esc(e.name)).join(', ')}</div>`:''}
     ${neu.length?`<div class="hint">Fügt nur diese Übungen hinzu. Plan, Tage und alles andere in ${esc(APP_NAME)} bleiben unverändert.</div>
     <div class="row"><button class="btn primary" style="flex:1" id="uebYes">${neu.length===1?'1 Übung hinzufügen':neu.length+' Übungen hinzufügen'}</button></div>`:'<div class="hint">Nichts Neues in der Datei.</div>'}`);
@@ -2523,13 +2778,14 @@ function applyTheme(){const t=S&&S.theme;if(t==='light'||t==='dark')document.doc
 function mehrSheet(){
   const age=exportAge(); const th=S.theme||'system';
   openSheet(`<h3>Mehr</h3>
-    <div class="setrow"><div class="kv"><b>Kanal</b><span>${esc(APP_NAME)}${TEST?' (Beispieldaten)':''}</span><b>Version</b><span>${APP_VERSION}</span><b>Letzter Export</b><span id="lastExp">${S.lastExport?esc(dateDE(S.lastExport))+(age?` (vor ${age} Tag${age===1?'':'en'})`:' (heute)'):'noch nie'}</span></div></div>
+    <div class="setrow"><div class="kv"><b>Kanal</b><span>${esc(APP_NAME)}${TEST?' (Beispieldaten)':''}</span><b>Version</b><span>${APP_VERSION}</span>${NATIVE?`<b>Hülle</b><span id="huelleVer">${esc(huelleVersion())}</span>`:''}<b>Letzter Export</b><span id="lastExp">${S.lastExport?esc(dateDE(S.lastExport))+(age?` (vor ${age} Tag${age===1?'':'en'})`:' (heute)'):'noch nie'}</span></div></div>
     <div class="setrow"><div class="lbl">Daten sichern</div><div class="row"><button class="btn primary" id="expBtn">Exportieren</button><button class="btn ghost" id="impBtn">Importieren</button></div>
       <input type="file" id="impFile" accept=".json,application/json" hidden>
       <div class="hint">Export als JSON-Datei, z. B. zum Ablegen in Google Drive. Import einer Sicherung ersetzt den ganzen Stand dieses Kanals; eine Übungsdatei fügt nur Übungen hinzu.</div></div>
     <div class="setrow"><div class="lbl">Erscheinungsbild</div><div class="seg" id="themeSeg">${[['system','System'],['light','Hell'],['dark','Dunkel']].map(([k,l])=>`<button data-theme-set="${k}" class="${th===k?'on':''}">${l}</button>`).join('')}</div></div>
     <div class="setrow" style="margin-top:18px">${TEST?'<button class="btn danger wide" id="resetBtn">Beispieldaten zurücksetzen</button>':'<button class="btn danger wide" id="wipeBtn">Alle Daten löschen</button>'}</div>`);
-  document.getElementById('expBtn').onclick=()=>{exportData();mehrSheet()};
+  // nach dem Export „Mehr“ neu zeichnen (Letzter Export: heute); mit Hülle erst nach dem Rückruf {ok:true} und nur, wenn das Sheet noch offen ist
+  document.getElementById('expBtn').onclick=()=>exportData(()=>{if(document.getElementById('expBtn'))mehrSheet()});
   const fi=document.getElementById('impFile');
   document.getElementById('impBtn').onclick=()=>fi.click();
   fi.onchange=()=>{const f=fi.files&&fi.files[0];if(f)importFile(f)};
@@ -2562,7 +2818,8 @@ function initPwa(){
 // Die installierte App bleibt oft über Nacht geöffnet; „heute“ ist beim Laden festgelegt, deshalb bei neuem Tag neu laden
 document.addEventListener('visibilitychange',()=>{if(document.hidden)return;const n=new Date();n.setHours(12,0,0,0);if(iso(n)!==iso(today)){save();location.reload()}});
 
-load(); applyTheme(); render(); initPwa();
+load(); applyTheme(); render(); initPwa(); initNative();
+shAufraeumen(); // 1.0.22: nach einem Neuladen mit offenem Sheet den liegengebliebenen Eintrag {sheet:1} entfernen
 if(loadFehler)setTimeout(()=>toast('Gespeicherte Daten nicht lesbar. Kopie unter '+STORE_KEY+'-defekt.'),300);
 </script>
 </body>
